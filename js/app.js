@@ -404,11 +404,7 @@
   function setupMode() {
     const demo = B.mode === "demo";
     $("#adminDemoNote").hidden = !demo;
-    if (!demo) {
-      $("#luLabel").textContent = "E-mail";
-      $("#lu").type = "email"; $("#lu").autocomplete = "email";
-      $("#loginErr").textContent = "E-mail ou senha incorretos. Confira e tente de novo.";
-    }
+    /* no Supabase o campo continua "Usuário": aceita o usuário ou o e-mail completo */
   }
   /* gira os banners com mais de uma imagem */
   setInterval(() => {

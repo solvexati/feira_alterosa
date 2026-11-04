@@ -212,8 +212,11 @@
         return { cfg, stalls: cache.stalls };
       },
       isAdmin: () => admin,
-      async adminLogin(email, pw) {
-        const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password: pw });
+      /* aceita o usuário ("adminfeiraalteraso") ou o e-mail completo */
+      async adminLogin(user, pw) {
+        let email = user.trim().toLowerCase();
+        if (!email.includes("@")) email += "@" + (C.ADMIN_EMAIL_DOMINIO || "feiraalterosa.app");
+        const { error } = await sb.auth.signInWithPassword({ email, password: pw });
         if (error) return false;
         await checkAdmin();
         if (!admin) { await sb.auth.signOut(); return false; }
