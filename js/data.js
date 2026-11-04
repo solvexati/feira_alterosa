@@ -2,7 +2,7 @@
    window.FeiraBackend expõe a mesma interface em dois modos:
    - "supabase": banco real (Postgres + Auth + Storage), quando js/config.js está preenchido;
    - "demo": tudo no navegador (localStorage), como o feira-modelo.html.
-   Cada barraca tem: 1 logo e até 10 fotos de produtos. A capa do site tem até 5 imagens. */
+   Cada barraca tem: 1 logo, 1 banner (fundo do topo da página) e até 10 fotos de produtos. A capa do site tem até 5 imagens. */
 (function () {
   "use strict";
   const C = window.FEIRA_CONFIG || {};
@@ -39,10 +39,11 @@
   /* Tamanhos de envio (lado maior, em px) pensados para telas de alta densidade:
      - foto de produto: 1280px → nítida no carrossel do celular (3x) e na coluna da web (2x)
      - capa do site:    1920px → faixa larga da web
+     - banner da loja: 1600px → faixa do topo da página da loja
      - logo:             300px → aparece com no máximo ~90px (×3 = 270px)
      Formato WebP qualidade 0,82 (≈ 25–35% menor que JPEG com a mesma qualidade).
      Se o navegador não gerar WebP, usa JPEG qualidade 0,85. Nunca aumenta uma imagem pequena. */
-  const SIZES = { foto: 1280, capa: 1920, logo: 300 };
+  const SIZES = { foto: 1280, capa: 1920, banner: 1600, logo: 300 };
   /* se o navegador demorar demais para gerar o arquivo, desiste (e o código cai para JPEG) */
   const canvasBlob = (c, type, q) => new Promise(r => { const t = setTimeout(() => r(null), 8000); c.toBlob(b => { clearTimeout(t); r(b); }, type, q); });
   async function compress(file, kind) {
@@ -103,7 +104,7 @@
       const photos = imgs(s.fotos);
       return {
         id: s.id, num: s.num, name: s.name, owner: s.owner, cat: s.cat, wa: s.wa, ig: s.ig || "", desc: s.desc || "",
-        logo: s.logo || null, img: photos[0] ? photos[0].url : null, photos
+        logo: s.logo || null, banner: s.banner || null, img: s.banner || (photos[0] ? photos[0].url : null), photos
       };
     };
 
@@ -122,9 +123,10 @@
         if (covers) cfg.imgs = await Promise.all(covers.map(blobToDataURL));
         if (!store(K_CFG, cfg)) throw new Error("O navegador ficou sem espaço para guardar as fotos da capa.");
       },
-      async saveStall(editId, d, logo) {
+      async saveStall(editId, d, logo, banner) {
         const data = { num: d.num, name: d.name, owner: d.owner, cat: d.cat, wa: d.wa, ig: d.ig, desc: d.desc };
         if (logo !== undefined) data.logo = logo ? await blobToDataURL(logo) : null;
+        if (banner !== undefined) data.banner = banner ? await blobToDataURL(banner) : null;
         let id = editId;
         if (editId != null) Object.assign(find(editId), data);
         else { id = Date.now(); raw.push({ id, fotos: [], logo: null, ...data }); }
@@ -194,12 +196,13 @@
       mode: "supabase",
       async init() { await checkAdmin(); },
       async load() {
-        const [c, b, f] = await Promise.all([
+        const [c, b, f, bn] = await Promise.all([
           sb.from("feira_config").select("*").eq("id", 1).maybeSingle(),
           sb.from("barracas_publicas").select("*"),
-          sb.from("barraca_fotos").select("id,barraca_id,path,ordem").order("ordem")
+          sb.from("barraca_fotos").select("id,barraca_id,path,ordem").order("ordem"),
+          sb.from("barraca_banners").select("id,barraca_id,path,ordem").order("ordem")
         ]);
-        for (const r of [c, b, f]) if (r.error) throw r.error;
+        for (const r of [c, b, f, bn]) if (r.error) throw r.error;
         const conf = c.data || {};
         cache.coverPaths = conf.fotos_capa || [];
         const cfg = {
@@ -211,14 +214,15 @@
           (rows || []).forEach(x => (out[x.barraca_id] = out[x.barraca_id] || []).push({ id: x.id, path: x.path, url: pubUrl(x.path) }));
           return out;
         };
-        const fotos = group(f.data);
+        const fotos = group(f.data), banners = group(bn.data);
         cache.stalls = sortStalls((b.data || []).map(r => {
-          const ph = fotos[r.id] || [];
+          const ph = fotos[r.id] || [], ban = (banners[r.id] || [])[0] || null;
           return {
             id: r.id, num: r.numero, name: r.nome, owner: r.proprietario, cat: r.categoria, wa: r.whatsapp,
             ig: r.instagram || "", desc: r.descricao || "",
             logo: pubUrl(r.logo_path), logoPath: r.logo_path,
-            img: ph[0] ? ph[0].url : null, photos: ph
+            banner: ban ? ban.url : null, bannerRow: ban,
+            img: ban ? ban.url : (ph[0] ? ph[0].url : null), photos: ph
           };
         }));
         return { cfg, stalls: cache.stalls };
@@ -248,7 +252,7 @@
         if (error) { if (covers) await removeFiles(paths); fail(friendly(error)); }
         if (covers) await removeFiles(old);
       },
-      async saveStall(editId, d, logo) {
+      async saveStall(editId, d, logo, banner) {
         const row = {
           numero: d.num, nome: d.name, proprietario: d.owner, categoria: d.cat, whatsapp: d.wa,
           instagram: d.ig || null, descricao: (d.desc || "").slice(0, 180) || null
@@ -268,6 +272,20 @@
           const { error } = await sb.from("barracas").update({ logo_path: path }).eq("id", id);
           if (error) fail("A barraca foi salva, mas a logo não: " + error.message);
           if (prev) await removeFiles([prev]);
+        }
+        /* banner único da loja (guardado em barraca_banners, sempre 1 linha) */
+        if (banner !== undefined) {
+          const prev = (stallById(id) || {}).bannerRow;
+          if (banner) {
+            const path = await upload(`barracas/${id}/banner/${uid()}.${extOf(banner)}`, banner);
+            if (prev) await sb.from("barraca_banners").delete().eq("id", prev.id);
+            const { error } = await sb.from("barraca_banners").insert({ barraca_id: id, path, ordem: 0 });
+            if (error) { await removeFiles([path]); fail("A barraca foi salva, mas o banner não: " + error.message); }
+          } else if (prev) {
+            const { error } = await sb.from("barraca_banners").delete().eq("id", prev.id);
+            if (error) fail("Não foi possível remover o banner: " + error.message);
+          }
+          if (prev) await removeFiles([prev.path]);
         }
         return id;
       },

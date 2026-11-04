@@ -153,7 +153,8 @@
       <label class="f">Instagram <small>opcional</small><input id="fIg" placeholder="@lojadamaria"></label>
       <label class="f full">Descrição curta<textarea id="fDesc" rows="2" maxlength="180" placeholder="O que a barraca vende"></textarea></label>
       <label class="f">Logo <small>quadrada</small><input id="fLogo" type="file" accept="image/*"></label>
-      <div class="prev" id="fPrev"></div>
+      <label class="f">Banner da loja <small>horizontal · fundo do topo da página</small><input id="fBanner" type="file" accept="image/*"></label>
+      <div class="prev full" id="fPrev"></div>
       <p class="err full" id="formErr" hidden></p>
       <div class="actions full"><button class="btn" type="submit" id="saveBtn">Cadastrar barraca</button><button class="btn ghost" type="button" id="cancelEdit">Cancelar</button></div>
     </form>
@@ -172,6 +173,14 @@
   <button data-search="1" data-tab="buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Buscar</span></button>
   <button data-nav="mapa" data-tab="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14"/></svg><span>Mapa</span></button>
 </nav>
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Foto do produto" hidden>
+  <div class="lb-scrim" data-lb-close></div>
+  <img id="lbImg" alt="">
+  <span class="gal-count lb-count" id="lbCount"></span>
+  <button class="x lb-x" id="lbClose" type="button" data-lb-close aria-label="Fechar">×</button>
+  <button class="arrow l" type="button" data-lb="-1" aria-label="Foto anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+  <button class="arrow r" type="button" data-lb="1" aria-label="Próxima foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</div>
 <a class="fab" id="fab" target="_blank" rel="noopener" aria-label="Falar com a organização no WhatsApp"></a>
 
 <!-- Configuração (URL e chave pública do Supabase). Deixe vazio para o modo demonstração. -->

@@ -133,6 +133,8 @@
     const row = f => `<div class="mrow">${Array.from({ length: 12 }, (_, i) => { const n = f + i, s = byNum[n]; return s ? `<button class="slot on" style="--c:${color(s)}" data-stall="${n}" aria-label="Barraca ${code(n)}: ${esc(s.name)}" title="${esc(s.name)}">${code(n)}</button>` : `<span class="slot">${code(n)}</span>`; }).join("")}</div>`;
     $("#map").innerHTML = `${row(1)}<div class="aisle">Corredor A</div>${row(13)}${row(25)}<div class="aisle">Corredor B</div>${row(37)}`;
   }
+  /* ---------- página da loja: banner no topo, dados da loja e grade com as fotos dos produtos ---------- */
+  let lbPhotos = [], lbIndex = 0, lbName = "";
   function renderDetail(num) {
     const s = stalls.find(x => x.num === num);
     const v = $("#v-barraca");
@@ -141,42 +143,70 @@
     document.title = `${s.name} · Barraca ${code(s.num)} · ${cfg.name}`;
     const msg = "Olá! Vi sua barraca no site da " + cfg.name + ".";
     const ig = s.ig ? `<div class="c-row">${IG_SVG}<span>@${esc(s.ig)}</span><a class="icon" href="https://instagram.com/${esc(s.ig)}" target="_blank" rel="noopener" aria-label="Abrir Instagram">${ARROW}</a></div>` : "";
+    const capa = s.banner
+      ? `<div class="loja-capa"><img src="${esc(s.banner)}" alt="Banner de ${esc(s.name)}" fetchpriority="high"></div>`
+      : `<div class="loja-capa" style="background:repeating-linear-gradient(135deg,${color(s)} 0 28px,color-mix(in srgb,${color(s)} 80%,#000) 28px 56px)"></div>`;
+    const ph = s.photos || [];
+    lbPhotos = ph; lbName = s.name;
+    const prods = ph.length
+      ? `<div class="prod-grid">${ph.map((p, i) => `<button class="prod" data-ph="${i}" aria-label="Abrir foto ${i + 1} de ${ph.length}"><img src="${esc(p.url)}" alt="Produto ${i + 1} de ${esc(s.name)}" loading="lazy"></button>`).join("")}</div>`
+      : `<p class="note" style="margin:0">Esta barraca ainda não colocou fotos dos produtos.</p>`;
     v.innerHTML = `${back}
-     <article class="detail">${gallery(s)}
+     <article class="detail loja">${capa}
       <div class="d-body">
-        <div class="d-head">${thumb(s)}<span class="num-badge">Barraca ${code(s.num)}</span></div>
-        <div><h1>${esc(s.name)}</h1><div class="owner">${esc(s.owner)} · ${esc(s.cat)}</div></div>
-        ${s.desc ? `<p>${esc(s.desc)}</p>` : ""}
-        <div>
-          <div class="c-row">${PHONE_SVG}<span>${esc(fmtPhone(s.wa))}</span><a class="icon" href="${waLink(s.wa, msg)}" target="_blank" rel="noopener" aria-label="WhatsApp" style="color:var(--wa)">${WA_SVG.replace("<svg", '<svg fill="currentColor"')}</a></div>
-          ${ig}
+        <div class="loja-info">
+          <div class="loja-main">
+            <div class="d-head">${thumb(s)}<span class="num-badge">Barraca ${code(s.num)}</span></div>
+            <div><h1>${esc(s.name)}</h1><div class="owner">${esc(s.owner)} · ${esc(s.cat)}</div></div>
+            ${s.desc ? `<p>${esc(s.desc)}</p>` : ""}
+          </div>
+          <div class="loja-contato">
+            <div>
+              <div class="c-row">${PHONE_SVG}<span>${esc(fmtPhone(s.wa))}</span><a class="icon" href="${waLink(s.wa, msg)}" target="_blank" rel="noopener" aria-label="WhatsApp" style="color:var(--wa)">${WA_SVG.replace("<svg", '<svg fill="currentColor"')}</a></div>
+              ${ig}
+            </div>
+            <div class="d-actions"><a class="wa-btn" href="${waLink(s.wa, msg)}" target="_blank" rel="noopener">${WA_SVG}Chamar no WhatsApp</a>${s.ig ? `<a class="ig-btn" href="https://instagram.com/${esc(s.ig)}" target="_blank" rel="noopener">${IG_SVG}Ver no Instagram</a>` : ""}</div>
+          </div>
         </div>
-        <div class="d-actions"><a class="wa-btn" href="${waLink(s.wa, msg)}" target="_blank" rel="noopener">${WA_SVG}Chamar no WhatsApp</a>${s.ig ? `<a class="ig-btn" href="https://instagram.com/${esc(s.ig)}" target="_blank" rel="noopener">${IG_SVG}Ver no Instagram</a>` : ""}</div>
-      </div></article>`;
+      </div>
+      <section class="prods" aria-label="Produtos">
+        <div class="sec-head"><h2>Produtos</h2>${ph.length ? `<span class="note">${ph.length} foto${ph.length > 1 ? "s" : ""} · toque para ampliar</span>` : ""}</div>
+        ${prods}
+      </section></article>`;
   }
 
-  /* ---------- carrossel de fotos da barraca (passa a cada 2s) ---------- */
-  function gallery(s) {
-    const ph = s.photos || []; if (!ph.length) return banner(s);
-    return `<div class="gal"><div class="gal-track" id="galTrack">${ph.map((p, i) => `<img src="${esc(p.url)}" alt="Foto ${i + 1} de ${esc(s.name)}" ${i > 1 ? 'loading="lazy"' : ""}>`).join("")}</div>
-      <span class="gal-count" id="galCount">1 / ${ph.length}</span>
-      ${ph.length > 1 ? `<button class="arrow l" data-gal="-1" aria-label="Foto anterior">${ARROW_L}</button><button class="arrow r" data-gal="1" aria-label="Próxima foto">${ARROW}</button>
-      <div class="dots">${ph.map((_, i) => `<button class="${i ? "" : "on"}" data-gd="${i}" aria-label="Foto ${i + 1}"></button>`).join("")}</div>` : ""}</div>`;
+  /* ---------- foto ampliada (sem passagem automática: só setas, teclado ou arrastar) ---------- */
+  function lbShow(i) {
+    const n = lbPhotos.length; if (!n) return;
+    lbIndex = ((i % n) + n) % n;
+    $("#lbImg").src = lbPhotos[lbIndex].url;
+    $("#lbImg").alt = `Produto ${lbIndex + 1} de ${lbName}`;
+    $("#lbCount").textContent = `${lbIndex + 1} / ${n}`;
+    $("#lb").querySelectorAll(".arrow").forEach(b => b.hidden = n < 2);
+    /* já pede a próxima foto para a troca ser instantânea */
+    if (n > 1) { const pre = new Image(); pre.src = lbPhotos[(lbIndex + 1) % n].url; }
   }
-  let galTimer = null;
-  function wireGallery() {
-    clearInterval(galTimer);
-    const t = $("#galTrack"); if (!t) return; const n = t.children.length; if (n < 2) return;
-    const idx = () => Math.round(t.scrollLeft / t.clientWidth);
-    const go = i => t.scrollTo({ left: ((i % n) + n) % n * t.clientWidth, behavior: reduceMotion() ? "auto" : "smooth" });
-    const auto = () => { clearInterval(galTimer); galTimer = setInterval(() => { if (!document.getElementById("galTrack")) return clearInterval(galTimer); go(idx() + 1); }, 2000); };
-    t.addEventListener("scroll", () => { const i = idx(); $("#galCount").textContent = `${i + 1} / ${n}`; document.querySelectorAll("[data-gd]").forEach((b, k) => b.classList.toggle("on", k === i)); }, { passive: true });
-    document.querySelectorAll("[data-gal]").forEach(b => b.onclick = () => { go(idx() + +b.dataset.gal); auto(); });
-    document.querySelectorAll("[data-gd]").forEach(b => b.onclick = () => { go(+b.dataset.gd); auto(); });
-    t.addEventListener("touchstart", () => clearInterval(galTimer), { passive: true });
-    t.addEventListener("touchend", auto, { passive: true });
-    auto();
-  }
+  function lbOpen(i) { lbShow(i); $("#lb").hidden = false; document.body.classList.add("lock"); $("#lbClose").focus(); }
+  function lbClose() { if ($("#lb").hidden) return; $("#lb").hidden = true; document.body.classList.remove("lock"); const b = document.querySelector(`[data-ph="${lbIndex}"]`); if (b) b.focus(); }
+  document.addEventListener("click", e => {
+    const p = e.target.closest("[data-ph]"); if (p) { lbOpen(+p.dataset.ph); return; }
+    if (e.target.closest("[data-lb-close]")) lbClose();
+    const a = e.target.closest("[data-lb]"); if (a) lbShow(lbIndex + +a.dataset.lb);
+  });
+  addEventListener("keydown", e => {
+    if ($("#lb").hidden) return;
+    if (e.key === "Escape") lbClose();
+    else if (e.key === "ArrowRight") lbShow(lbIndex + 1);
+    else if (e.key === "ArrowLeft") lbShow(lbIndex - 1);
+  });
+  (function lbSwipe() {
+    const el = $("#lb"); let x0 = null;
+    el.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+    el.addEventListener("touchend", e => {
+      if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (Math.abs(dx) > 40) lbShow(lbIndex + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+  })();
 
   /* ---------- rotas ---------- */
   function route() {
@@ -197,8 +227,8 @@
       $("#mapBox").hidden = !showMap && $("#mapBtn").getAttribute("aria-expanded") !== "true";
       $("#mapBtn").setAttribute("aria-expanded", String(!$("#mapBox").hidden));
     }
-    clearInterval(galTimer);
-    if (view === "barraca") { renderDetail(+m[1]); wireGallery(); }
+    if (view === "barraca") renderDetail(+m[1]);
+    if (view !== "barraca") lbClose();
     if (view === "admin") { const ok = B.isAdmin(); $("#loginBox").hidden = ok; $("#panelBox").hidden = !ok; if (ok) renderAdmin(); }
     renderDrawer();
     const tab = h === "mapa" ? "mapa" : view === "barraca" ? "barracas" : view;
@@ -282,14 +312,27 @@
   /* barracas */
   const LIMITS = window.FEIRA_LIMITS;
   let editId = null, confirmId = null;
-  let logo = null, logoChanged = false; /* logo = {url, blob?} */
-  function showPrev() { $("#fPrev").innerHTML = logo ? `<img src="${esc(logo.url)}" alt="Logo"><button type="button" class="btn ghost sm" id="rmImgs">Remover logo</button>` : ""; }
+  /* logo e banner da loja: {url, blob?}; "changed" diz se precisa salvar */
+  let logo = null, logoChanged = false, banImg = null, banChanged = false;
+  function showPrev() {
+    $("#fPrev").innerHTML =
+      (logo ? `<img src="${esc(logo.url)}" alt="Logo"><button type="button" class="btn ghost sm" id="rmLogo">Remover logo</button>` : "") +
+      (banImg ? `<img src="${esc(banImg.url)}" alt="Banner" style="max-width:200px"><button type="button" class="btn ghost sm" id="rmBanner">Remover banner</button>` : "");
+  }
   $("#fLogo").addEventListener("change", async e => {
     if (!e.target.files[0]) return;
     const blob = await compress(e.target.files[0], "logo");
     logo = { blob, url: URL.createObjectURL(blob) }; logoChanged = true; showPrev();
   });
-  $("#fPrev").addEventListener("click", e => { if (e.target.id === "rmImgs") { logo = null; logoChanged = true; $("#fLogo").value = ""; showPrev(); } });
+  $("#fBanner").addEventListener("change", async e => {
+    if (!e.target.files[0]) return;
+    const blob = await compress(e.target.files[0], "banner");
+    banImg = { blob, url: URL.createObjectURL(blob) }; banChanged = true; showPrev();
+  });
+  $("#fPrev").addEventListener("click", e => {
+    if (e.target.id === "rmLogo") { logo = null; logoChanged = true; $("#fLogo").value = ""; showPrev(); }
+    if (e.target.id === "rmBanner") { banImg = null; banChanged = true; $("#fBanner").value = ""; showPrev(); }
+  });
 
   function renderAdmin() {
     fillCfg();
@@ -315,13 +358,13 @@
   function openEdit(s) {
     resetForm(); editId = s.id;
     $("#fName").value = s.name; $("#fOwner").value = s.owner; $("#fNum").value = s.num; $("#fCat").value = s.cat; $("#fWa").value = fmtPhone(s.wa); $("#fIg").value = s.ig ? "@" + s.ig : ""; $("#fDesc").value = s.desc || "";
-    logo = s.logo ? { url: s.logo } : null; showPrev();
+    logo = s.logo ? { url: s.logo } : null; banImg = s.banner ? { url: s.banner } : null; showPrev();
     $("#formTitle").textContent = `Editar barraca ${code(s.num)}`; $("#saveBtn").textContent = "Salvar alterações";
     $("#imgsLater").hidden = true; $("#imgsBox").hidden = false;
     renderImgs();
   }
   function resetForm() {
-    editId = null; logo = null; logoChanged = false;
+    editId = null; logo = null; logoChanged = false; banImg = null; banChanged = false;
     $("#stallForm").reset(); showPrev();
     $("#formTitle").textContent = "Nova barraca"; $("#saveBtn").textContent = "Cadastrar barraca"; $("#formErr").hidden = true;
     $("#imgsLater").hidden = false; $("#imgsBox").hidden = true; $("#imgsOk").hidden = true; $("#imgsErr").hidden = true;
@@ -345,7 +388,9 @@
     const btn = $("#saveBtn"), old = btn.textContent;
     btn.disabled = true; btn.textContent = "Salvando…";
     try {
-      const id = await B.saveStall(editId, data, logoChanged ? (logo ? logo.blob : null) : undefined);
+      const id = await B.saveStall(editId, data,
+        logoChanged ? (logo ? logo.blob : null) : undefined,
+        banChanged ? (banImg ? banImg.blob : null) : undefined);
       await refresh();
       if (isNew) {
         /* continua no modal para colocar as fotos */
