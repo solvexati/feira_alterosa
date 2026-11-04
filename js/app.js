@@ -1,5 +1,6 @@
 /* Feira Alterosa — telas e comportamento (portado do feira-modelo.html).
-   As rotas usam o #hash, como no modelo: #inicio, #barracas, #mapa, #barraca-12, #vendedor, #admin. */
+   As rotas usam o #hash, como no modelo: #inicio, #barracas, #mapa, #barraca-12, #admin.
+   (A área do feirante foi retirada por enquanto: o admin coloca logo, banner e fotos.) */
 (function () {
   "use strict";
   const B = window.FeiraBackend;
@@ -25,8 +26,9 @@
   const same = (a, b) => String(a) === String(b);
   const reduceMotion = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
   const thumb = s => `<span class="thumb" style="background:${color(s)}">${s.logo ? `<img src="${esc(s.logo)}" alt="" loading="lazy">` : `<span>${esc(initials(s.name))}</span>`}</span>`;
-  const banner = (s, cls = "ban") => s.img
-    ? `<div class="${cls}"><img src="${esc(s.img)}" alt="Banner de ${esc(s.name)}" loading="lazy"></div>`
+  /* banner: até 5 imagens que se alternam (fade a cada 4s); sem imagens, listras na cor da categoria */
+  const banner = (s, cls = "ban") => (s.banners && s.banners.length)
+    ? `<div class="${cls}">${s.banners.map((b, i) => `<img class="bimg${i ? "" : " on"}" src="${esc(b.url)}" alt="${i ? "" : "Banner de " + esc(s.name)}" loading="lazy">`).join("")}</div>`
     : `<div class="${cls}" style="background:repeating-linear-gradient(135deg,${color(s)} 0 28px,color-mix(in srgb,${color(s)} 80%,#000) 28px 56px)"><span class="ini">${esc(initials(s.name))}</span></div>`;
   const waLink = (n, msg) => `https://wa.me/55${digits(n)}?text=${encodeURIComponent(msg)}`;
 
@@ -155,7 +157,8 @@
 
   /* ---------- carrossel de fotos da barraca (passa a cada 2s) ---------- */
   function gallery(s) {
-    const ph = s.photos || []; if (!ph.length) return banner(s);
+    /* fotos dos produtos; se ainda não houver, usa as imagens do banner */
+    const ph = (s.photos && s.photos.length) ? s.photos : (s.banners || []); if (!ph.length) return banner(s);
     return `<div class="gal"><div class="gal-track" id="galTrack">${ph.map((p, i) => `<img src="${esc(p.url)}" alt="Foto ${i + 1} de ${esc(s.name)}" ${i > 1 ? 'loading="lazy"' : ""}>`).join("")}</div>
       <span class="gal-count" id="galCount">1 / ${ph.length}</span>
       ${ph.length > 1 ? `<button class="arrow l" data-gal="-1" aria-label="Foto anterior">${ARROW_L}</button><button class="arrow r" data-gal="1" aria-label="Próxima foto">${ARROW}</button>
@@ -180,13 +183,13 @@
   function route() {
     const h = location.hash.slice(1) || "inicio";
     const m = h.match(/^barraca-(\d+)$/);
-    const view = m ? "barraca" : h === "mapa" ? "barracas" : ["inicio", "barracas", "admin", "vendedor"].includes(h) ? h : "inicio";
+    const view = m ? "barraca" : h === "mapa" ? "barracas" : ["inicio", "barracas", "admin"].includes(h) ? h : "inicio";
     document.querySelectorAll("main .col > .view").forEach(v => v.hidden = v.id !== "v-" + view);
     $("#brand").textContent = cfg.name;
     if (view !== "barraca") document.title = `${cfg.name} · ${cfg.city || "Feira livre"}`;
     $("#fab").href = waLink(cfg.wa, "Olá! Vim pelo site da " + cfg.name + ".");
     $("#fab").innerHTML = WA_SVG;
-    $("#fab").hidden = view === "admin" || view === "vendedor" || !digits(cfg.wa);
+    $("#fab").hidden = view === "admin" || !digits(cfg.wa);
     clearInterval(timer);
     if (view === "inicio") renderHome();
     if (view === "barracas") {
@@ -197,12 +200,11 @@
     }
     clearInterval(galTimer);
     if (view === "barraca") { renderDetail(+m[1]); wireGallery(); }
-    if (view === "vendedor") renderSeller();
     if (view === "admin") { const ok = B.isAdmin(); $("#loginBox").hidden = ok; $("#panelBox").hidden = !ok; if (ok) renderAdmin(); }
     renderDrawer();
     const tab = h === "mapa" ? "mapa" : view === "barraca" ? "barracas" : view;
     document.querySelectorAll("#tabbar [data-tab], .topnav [data-tab]").forEach(b => { const on = b.dataset.tab === tab; b.classList.toggle("on", on); on ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"); });
-    document.body.classList.toggle("no-tabs", view === "admin" || view === "vendedor");
+    document.body.classList.toggle("no-tabs", view === "admin");
     window.scrollTo(0, 0);
   }
   const nav = t => { closeMenu(); if (location.hash === "#" + t) route(); else location.hash = t; };
@@ -279,21 +281,25 @@
   });
 
   /* barracas */
+  const LIMITS = window.FEIRA_LIMITS;
   let editId = null, confirmId = null;
-  let logo = null, ban = null, logoChanged = false, banChanged = false; /* logo/ban = {url, blob?} */
-  function showPrev() { $("#fPrev").innerHTML = (logo ? `<img src="${esc(logo.url)}" alt="Logo">` : "") + (ban ? `<img src="${esc(ban.url)}" alt="Banner">` : "") + (logo || ban ? `<button type="button" class="btn ghost sm" id="rmImgs">Remover imagens</button>` : ""); }
-  async function pickImg(file, maxW) { const blob = await compress(file, maxW); return { blob, url: URL.createObjectURL(blob) }; }
-  $("#fLogo").addEventListener("change", async e => { if (e.target.files[0]) { logo = await pickImg(e.target.files[0], 300); logoChanged = true; showPrev(); } });
-  $("#fBan").addEventListener("change", async e => { if (e.target.files[0]) { ban = await pickImg(e.target.files[0], 1000); banChanged = true; showPrev(); } });
-  $("#fPrev").addEventListener("click", e => { if (e.target.id === "rmImgs") { logo = ban = null; logoChanged = banChanged = true; $("#fLogo").value = ""; $("#fBan").value = ""; showPrev(); } });
+  let logo = null, logoChanged = false; /* logo = {url, blob?} */
+  function showPrev() { $("#fPrev").innerHTML = logo ? `<img src="${esc(logo.url)}" alt="Logo"><button type="button" class="btn ghost sm" id="rmImgs">Remover logo</button>` : ""; }
+  $("#fLogo").addEventListener("change", async e => {
+    if (!e.target.files[0]) return;
+    const blob = await compress(e.target.files[0], 300);
+    logo = { blob, url: URL.createObjectURL(blob) }; logoChanged = true; showPrev();
+  });
+  $("#fPrev").addEventListener("click", e => { if (e.target.id === "rmImgs") { logo = null; logoChanged = true; $("#fLogo").value = ""; showPrev(); } });
 
   function renderAdmin() {
     fillCfg();
     const list = [...stalls].sort((a, b) => a.num - b.num);
     $("#adminCount").textContent = `${stalls.length} cadastradas · ${48 - stalls.length} vagas`;
-    $("#adminList").innerHTML = list.map(s => `<div class="a-row">${thumb(s)}<span class="t"><b>${code(s.num)} · ${esc(s.name)}</b><small>${esc(s.owner)} · ${esc(fmtPhone(s.wa))} · ${(s.photos || []).length} fotos</small></span>
+    $("#adminList").innerHTML = list.length ? list.map(s => `<div class="a-row">${thumb(s)}<span class="t"><b>${code(s.num)} · ${esc(s.name)}</b><small>${esc(s.owner)} · ${esc(fmtPhone(s.wa))} · ${(s.photos || []).length} fotos · ${(s.banners || []).length} banners</small></span>
       ${same(confirmId, s.id) ? `<span class="confirm">Remover? <button class="btn danger sm" data-del="${esc(s.id)}">Remover</button><button class="btn ghost sm" data-nodel="1">Cancelar</button></span>`
-       : `<span class="actions"><button class="btn ghost sm" data-edit="${esc(s.id)}">Editar</button><button class="btn ghost sm" data-ask="${esc(s.id)}">Remover</button></span>`}</div>`).join("");
+       : `<span class="actions"><button class="btn ghost sm" data-edit="${esc(s.id)}">Editar</button><button class="btn ghost sm" data-ask="${esc(s.id)}">Remover</button></span>`}</div>`).join("")
+      : `<p class="empty">Nenhuma barraca cadastrada ainda. Clique em “+ Nova barraca”.</p>`;
   }
   $("#adminList").addEventListener("click", async e => {
     const d = e.target.dataset;
@@ -305,29 +311,24 @@
       try { await B.deleteStall(s.id); confirmId = null; await refresh(); renderAdmin(); flash(`Barraca ${code(s.num)} removida.`); }
       catch (err) { confirmId = null; renderAdmin(); flash(err.message, true); }
     }
-    else if (d.edit) {
-      const s = stalls.find(x => same(x.id, d.edit)); resetForm(); editId = s.id;
-      $("#fName").value = s.name; $("#fOwner").value = s.owner; $("#fNum").value = s.num; $("#fCat").value = s.cat; $("#fWa").value = fmtPhone(s.wa); $("#fIg").value = s.ig ? "@" + s.ig : ""; $("#fDesc").value = s.desc || "";
-      setPinField(true, s.pin);
-      logo = s.logo ? { url: s.logo } : null; ban = s.img ? { url: s.img } : null; showPrev();
-      $("#formTitle").textContent = `Editar barraca ${code(s.num)}`; $("#saveBtn").textContent = "Salvar alterações";
-      openModal();
-    }
+    else if (d.edit) { openEdit(stalls.find(x => same(x.id, d.edit))); openModal(); }
   });
-  /* senha: no Supabase não dá para ler a senha atual, então na edição o campo fica opcional */
-  function setPinField(editing, current) {
-    const pin = $("#fPin");
-    pin.minLength = B.minPin;
-    if (B.mode === "demo") { pin.required = true; pin.value = editing ? (current || "") : ""; pin.placeholder = "Ex.: 4821"; }
-    else { pin.required = !editing; pin.value = ""; pin.placeholder = editing ? "Deixe em branco para manter" : "Mínimo de 6 caracteres"; }
+  function openEdit(s) {
+    resetForm(); editId = s.id;
+    $("#fName").value = s.name; $("#fOwner").value = s.owner; $("#fNum").value = s.num; $("#fCat").value = s.cat; $("#fWa").value = fmtPhone(s.wa); $("#fIg").value = s.ig ? "@" + s.ig : ""; $("#fDesc").value = s.desc || "";
+    logo = s.logo ? { url: s.logo } : null; showPrev();
+    $("#formTitle").textContent = `Editar barraca ${code(s.num)}`; $("#saveBtn").textContent = "Salvar alterações";
+    $("#imgsLater").hidden = true; $("#imgsBox").hidden = false;
+    renderImgs();
   }
   function resetForm() {
-    editId = null; logo = ban = null; logoChanged = banChanged = false;
-    $("#stallForm").reset(); showPrev(); setPinField(false);
+    editId = null; logo = null; logoChanged = false;
+    $("#stallForm").reset(); showPrev();
     $("#formTitle").textContent = "Nova barraca"; $("#saveBtn").textContent = "Cadastrar barraca"; $("#formErr").hidden = true;
+    $("#imgsLater").hidden = false; $("#imgsBox").hidden = true; $("#imgsOk").hidden = true; $("#imgsErr").hidden = true;
   }
   function openModal() { $("#formErr").hidden = true; $("#stallModal").hidden = false; document.body.classList.add("lock"); setTimeout(() => $("#fName").focus(), 50); }
-  function closeModal() { $("#stallModal").hidden = true; document.body.classList.remove("lock"); resetForm(); }
+  function closeModal() { $("#stallModal").hidden = true; document.body.classList.remove("lock"); resetForm(); renderAdmin(); }
   $("#cancelEdit").onclick = closeModal;
   $("#newStall").onclick = () => { resetForm(); openModal(); };
   $("#stallModal").addEventListener("click", e => { if (e.target.closest("[data-close-modal]")) closeModal(); });
@@ -335,100 +336,90 @@
   function flash(m, isErr) { const el = $("#formOk"); el.textContent = m; el.className = isErr ? "err" : "ok"; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(() => el.hidden = true, 3500); }
   $("#stallForm").addEventListener("submit", async e => {
     e.preventDefault();
-    const num = +$("#fNum").value, wa = digits($("#fWa").value), err = $("#formErr"), pin = $("#fPin").value.trim();
+    const num = +$("#fNum").value, wa = digits($("#fWa").value), err = $("#formErr");
     const taken = stalls.find(s => s.num === num && !same(s.id, editId));
     if (taken) { err.textContent = `A barraca ${code(num)} já está com “${taken.name}”. Escolha outro número.`; err.hidden = false; return; }
-    if (wa.length < 10) { err.textContent = "O WhatsApp precisa ter DDD e número, por exemplo (31) 98765-4321."; err.hidden = false; return; }
-    if (pin && pin.length < B.minPin) { err.textContent = `A senha do feirante precisa ter pelo menos ${B.minPin} caracteres.`; err.hidden = false; return; }
+    if (wa.length < 10 || wa.length > 11) { err.textContent = "O WhatsApp precisa ter DDD e número, por exemplo (31) 98765-4321."; err.hidden = false; return; }
     const data = { num, name: $("#fName").value.trim(), owner: $("#fOwner").value.trim(), cat: $("#fCat").value, wa, ig: $("#fIg").value.trim().replace(/^@/, ""), desc: $("#fDesc").value.trim() };
-    const msg = editId != null ? `Barraca ${code(num)} atualizada.` : `Barraca ${code(num)} cadastrada e já aparece no site.`;
-    const imgs = { logo: logoChanged ? (logo ? logo.blob : null) : undefined, ban: banChanged ? (ban ? ban.blob : null) : undefined };
+    const isNew = editId == null;
     err.hidden = true;
     const btn = $("#saveBtn"), old = btn.textContent;
     btn.disabled = true; btn.textContent = "Salvando…";
     try {
-      await B.saveStall(editId, data, imgs, pin);
+      const id = await B.saveStall(editId, data, logoChanged ? (logo ? logo.blob : null) : undefined);
       await refresh();
-      closeModal(); renderAdmin(); flash(msg);
+      if (isNew) {
+        /* continua no modal para colocar banner e fotos */
+        openEdit(stalls.find(x => same(x.id, id)));
+        imgMsg(true, `Barraca ${code(num)} cadastrada e já aparece no site. Agora coloque o banner e as fotos.`);
+      } else { closeModal(); flash(`Barraca ${code(num)} atualizada.`); }
     } catch (ex) { err.textContent = ex.message; err.hidden = false; btn.textContent = old; }
     finally { btn.disabled = false; }
   });
 
-  /* ======================== ÁREA DO FEIRANTE ======================== */
-  const me = () => stalls.find(x => same(x.id, B.sellerStallId()));
-  function sMsg(ok, txt) { const a = $(ok ? "#sOk" : "#sErr"), b = $(ok ? "#sErr" : "#sOk"); b.hidden = true; a.textContent = txt; a.hidden = false; clearTimeout(a._t); a._t = setTimeout(() => a.hidden = true, 4000); }
-  function renderSeller() {
-    const s = me();
-    $("#sellerLogin").hidden = !!s; $("#sellerBox").hidden = !s; if (!s) return;
-    $("#sEyebrow").textContent = `Barraca ${code(s.num)} · ${s.cat}`; $("#sName").textContent = s.name;
-    $("#sDesc").value = s.desc || ""; $("#sIg").value = s.ig ? "@" + s.ig : "";
-    renderPhotos();
-  }
-  function renderPhotos() {
-    const ph = me().photos || [];
-    $("#sCount").textContent = `${ph.length} de 10`;
-    $("#sGrid").innerHTML = Array.from({ length: 10 }, (_, i) => {
-      if (ph[i]) return `<div class="ph"><img src="${esc(ph[i].url)}" alt="Foto ${i + 1}" loading="lazy"><span class="ph-n">${i + 1}</span>
+  /* banner (até 5) e fotos dos produtos (até 10), dentro do modal */
+  const editing = () => stalls.find(x => same(x.id, editId));
+  const listOf = (s, kind) => (kind === "fotos" ? s.photos : s.banners) || [];
+  function imgMsg(ok, txt) { const a = $(ok ? "#imgsOk" : "#imgsErr"), b = $(ok ? "#imgsErr" : "#imgsOk"); b.hidden = true; a.textContent = txt; a.hidden = false; clearTimeout(a._t); a._t = setTimeout(() => a.hidden = true, 5000); }
+  function renderGrid(kind) {
+    const s = editing(); if (!s) return;
+    const ph = listOf(s, kind), max = LIMITS[kind], grid = $(kind === "fotos" ? "#fotoGrid" : "#banGrid");
+    $(kind === "fotos" ? "#fotoCount" : "#banCount").textContent = `${ph.length} de ${max}`;
+    grid.innerHTML = Array.from({ length: max }, (_, i) => {
+      if (ph[i]) return `<div class="ph"><img src="${esc(ph[i].url)}" alt="Imagem ${i + 1}" loading="lazy"><span class="ph-n">${i + 1}</span>
         <div class="ph-act"><button type="button" data-mv="${i}" data-d="-1" ${i ? "" : "disabled"} aria-label="Mover para antes">‹</button><button type="button" data-rm="${i}">Remover</button><button type="button" data-mv="${i}" data-d="1" ${i < ph.length - 1 ? "" : "disabled"} aria-label="Mover para depois">›</button></div></div>`;
-      if (i === ph.length) return `<label class="ph add"><input type="file" accept="image/*" multiple class="sr" id="sFiles"><span>+</span><small>Adicionar fotos</small></label>`;
+      if (i === ph.length) return `<label class="ph add"><input type="file" accept="image/*" multiple class="sr" data-files="1"><span>+</span><small>Adicionar</small></label>`;
       return `<div class="ph empty"><span>${i + 1}</span></div>`;
     }).join("");
   }
-  let photoBusy = false;
-  async function photoOp(fn) {
-    if (photoBusy) return; photoBusy = true;
-    $("#sGrid").style.opacity = ".6";
-    try { await fn(); } catch (err) { sMsg(false, err.message); }
-    finally { photoBusy = false; $("#sGrid").style.opacity = ""; try { await refresh(); } catch (_) {} if (me()) renderPhotos(); }
+  function renderImgs() { renderGrid("banners"); renderGrid("fotos"); }
+  let imgBusy = false;
+  async function imgOp(fn) {
+    if (imgBusy) return; imgBusy = true;
+    $("#imgsBox").style.opacity = ".6";
+    try { await fn(); } catch (err) { imgMsg(false, err.message); }
+    finally { imgBusy = false; $("#imgsBox").style.opacity = ""; try { await refresh(); } catch (_) {} renderImgs(); }
   }
-  $("#sellerForm").addEventListener("submit", e => {
-    e.preventDefault();
-    busy($("#sellerBtn"), "Entrando…", async () => {
-      const id = await B.sellerLogin($("#su").value, $("#sp").value);
-      if (!id) { $("#sellerErr").hidden = false; return; }
-      await refresh();
-      $("#sellerErr").hidden = true; $("#sp").value = ""; renderSeller();
-    });
-  });
-  $("#sOut").onclick = async () => { await B.sellerLogout(); renderSeller(); };
-  $("#sView").onclick = () => nav("barraca-" + me().num);
-  $("#sGrid").addEventListener("change", e => {
-    if (e.target.id !== "sFiles") return;
-    const s = me(), room = 10 - s.photos.length, all = [...e.target.files], files = all.slice(0, room);
-    if (all.length > room) sMsg(false, `Só cabem mais ${room} foto(s). As demais foram ignoradas.`);
+  $("#imgsBox").addEventListener("change", e => {
+    if (!e.target.dataset.files) return;
+    const kind = e.target.closest(".ph-grid").dataset.kind, s = editing();
+    const room = LIMITS[kind] - listOf(s, kind).length, all = [...e.target.files], files = all.slice(0, room);
+    if (all.length > room) imgMsg(false, `Só cabem mais ${room} imagem(ns). As demais foram ignoradas.`);
     if (!files.length) return;
-    photoOp(async () => {
+    imgOp(async () => {
       const blobs = await Promise.all(files.map(f => compress(f, 1000)));
-      const saved = await B.addPhotos(s.id, blobs);
-      if (saved) sMsg(true, `${files.length} foto(s) adicionada(s). Já aparecem na sua barraca.`);
-      else sMsg(false, "As fotos aparecem agora, mas o navegador deste modelo ficou sem espaço para guardá-las. No sistema real isso não acontece.");
+      const saved = await B.addImages(s.id, kind, blobs);
+      if (saved) imgMsg(true, `${files.length} imagem(ns) adicionada(s). Já aparecem no site.`);
+      else imgMsg(false, "As imagens aparecem agora, mas o navegador ficou sem espaço para guardá-las (modo demonstração).");
     });
   });
-  $("#sGrid").addEventListener("click", e => {
-    const b = e.target.closest("button"); if (!b) return; const s = me();
-    if (b.dataset.rm != null) photoOp(async () => { await B.removePhoto(s.id, +b.dataset.rm); sMsg(true, "Foto removida."); });
-    else if (b.dataset.mv != null) { const i = +b.dataset.mv, j = i + +b.dataset.d; photoOp(() => B.movePhoto(s.id, i, j)); }
-  });
-  $("#sInfo").addEventListener("submit", async e => {
-    e.preventDefault();
-    const s = me();
-    try {
-      await B.saveSellerInfo(s.id, $("#sDesc").value.trim().slice(0, 180), $("#sIg").value.trim().replace(/^@/, ""));
-      await refresh(); sMsg(true, "Informações salvas.");
-    } catch (err) { sMsg(false, err.message); }
+  $("#imgsBox").addEventListener("click", e => {
+    const b = e.target.closest(".ph-act button"); if (!b) return;
+    const kind = b.closest(".ph-grid").dataset.kind, s = editing();
+    if (b.dataset.rm != null) imgOp(async () => { await B.removeImage(s.id, kind, +b.dataset.rm); imgMsg(true, "Imagem removida."); });
+    else if (b.dataset.mv != null) { const i = +b.dataset.mv, j = i + +b.dataset.d; imgOp(() => B.moveImage(s.id, kind, i, j)); }
   });
 
   /* ---------- início ---------- */
   function setupMode() {
     const demo = B.mode === "demo";
     $("#adminDemoNote").hidden = !demo;
-    $("#sellerDemoNote").hidden = !demo;
     if (!demo) {
       $("#luLabel").textContent = "E-mail";
       $("#lu").type = "email"; $("#lu").autocomplete = "email";
       $("#loginErr").textContent = "E-mail ou senha incorretos. Confira e tente de novo.";
     }
   }
+  /* gira os banners com mais de uma imagem */
+  setInterval(() => {
+    if (document.hidden) return;
+    document.querySelectorAll(".ban").forEach(b => {
+      const imgs = b.querySelectorAll(".bimg"); if (imgs.length < 2) return;
+      const i = [...imgs].findIndex(x => x.classList.contains("on"));
+      imgs[i].classList.remove("on"); imgs[(i + 1) % imgs.length].classList.add("on");
+    });
+  }, 4000);
+
   async function boot() {
     setupMode();
     /* /mapa, /barracas e ?mapa=1 abrem a tela correspondente */

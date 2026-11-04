@@ -29,7 +29,6 @@
       <button data-nav="inicio" data-tab="inicio">Início</button>
       <button data-nav="barracas" data-tab="barracas">Barracas</button>
       <button data-nav="mapa" data-tab="mapa">Mapa</button>
-      <button data-nav="vendedor" data-tab="vendedor">Área do feirante</button>
     </nav>
     <div style="display:flex;align-items:center;gap:4px">
     <button class="adm" data-nav="admin" aria-label="Área do administrador">ADM</button>
@@ -48,7 +47,6 @@
     <button data-nav="inicio">Início</button>
     <button data-nav="barracas">Todas as barracas</button>
     <button data-nav="mapa">Mapa da feira</button>
-    <button data-nav="vendedor">Área do feirante</button>
   </div>
   <span class="dr-label">Barracas</span>
   <ul class="dr-list" id="drList"></ul>
@@ -100,45 +98,6 @@
 
   <!-- DETALHE -->
   <section class="view" id="v-barraca" hidden></section>
-
-  <!-- FEIRANTE -->
-  <section class="view" id="v-vendedor" hidden>
-    <div class="panel" id="sellerLogin" style="max-width:420px;width:100%;margin-inline:auto">
-      <h2 style="font-size:1.6rem;color:var(--brand)">Área do feirante</h2>
-      <p class="note" style="margin:0">Entre para colocar as fotos dos seus produtos na sua barraca.</p>
-      <form id="sellerForm" class="form" style="grid-template-columns:1fr">
-        <label class="f">Seu WhatsApp<input id="su" inputmode="tel" autocomplete="username" required placeholder="(31) 98765-4321"></label>
-        <label class="f">Senha<input id="sp" type="password" autocomplete="current-password" required></label>
-        <p class="err" id="sellerErr" hidden>WhatsApp ou senha não conferem. A senha é passada pela organização da feira.</p>
-        <div class="actions"><button class="btn" type="submit" id="sellerBtn">Entrar</button><button class="btn ghost" type="button" data-nav="inicio">Voltar ao site</button></div>
-        <span class="note" id="sellerDemoNote" hidden>No modelo: WhatsApp <b>(31) 98765-4321</b>, senha <b>1234</b> (Hortifruti da Maria).</span>
-      </form>
-    </div>
-
-    <div id="sellerBox" class="view" hidden>
-      <div class="sec-head" style="flex-wrap:wrap">
-        <div><span class="eyebrow" id="sEyebrow">Barraca</span><h2 id="sName" style="margin-top:4px">Minha barraca</h2></div>
-        <div class="actions"><button class="btn ghost sm" id="sView">Ver minha barraca</button><button class="btn ghost sm" id="sOut">Sair</button></div>
-      </div>
-
-      <div class="panel">
-        <div class="sec-head"><h3 style="font-size:1.25rem">Fotos dos produtos</h3><span class="note" id="sCount"></span></div>
-        <p class="note" style="margin:0">Até 10 fotos. A primeira aparece primeiro no carrossel. Use as setas para mudar a ordem.</p>
-        <div class="ph-grid" id="sGrid"></div>
-        <p class="ok" id="sOk" hidden></p>
-        <p class="err" id="sErr" hidden></p>
-      </div>
-
-      <div class="panel">
-        <h3 style="font-size:1.25rem">Sobre a barraca</h3>
-        <form id="sInfo" class="form">
-          <label class="f full">Descrição<textarea id="sDesc" rows="3" maxlength="180"></textarea></label>
-          <label class="f">Instagram<input id="sIg" placeholder="@suabarraca"></label>
-          <div class="actions full"><button class="btn" type="submit">Salvar</button></div>
-        </form>
-      </div>
-    </div>
-  </section>
 
   <!-- PAINEL -->
   <section class="view" id="v-admin" hidden>
@@ -192,14 +151,21 @@
       <label class="f">Categoria<select id="fCat"></select></label>
       <label class="f">WhatsApp <small>com DDD</small><input id="fWa" inputmode="tel" required placeholder="(31) 98765-4321"></label>
       <label class="f">Instagram <small>opcional</small><input id="fIg" placeholder="@lojadamaria"></label>
-      <label class="f">Senha do feirante <small id="fPinHint">para ele entrar e subir fotos</small><input id="fPin" required minlength="4" maxlength="12" placeholder="Ex.: 4821"></label>
       <label class="f full">Descrição curta<textarea id="fDesc" rows="2" maxlength="180" placeholder="O que a barraca vende"></textarea></label>
       <label class="f">Logo <small>quadrada</small><input id="fLogo" type="file" accept="image/*"></label>
-      <label class="f">Banner <small>horizontal</small><input id="fBan" type="file" accept="image/*"></label>
-      <div class="prev full" id="fPrev"></div>
+      <div class="prev" id="fPrev"></div>
       <p class="err full" id="formErr" hidden></p>
       <div class="actions full"><button class="btn" type="submit" id="saveBtn">Cadastrar barraca</button><button class="btn ghost" type="button" id="cancelEdit">Cancelar</button></div>
     </form>
+    <p class="note" id="imgsLater">Depois de cadastrar, aqui mesmo você coloca o banner (até 5 imagens) e as fotos dos produtos (até 10).</p>
+    <div id="imgsBox" class="view" style="gap:14px" hidden>
+      <p class="ok" id="imgsOk" hidden></p>
+      <p class="err" id="imgsErr" hidden></p>
+      <div class="sec-head"><h3 style="font-size:1.1rem">Banner <small class="note">horizontal · gira no cartão da barraca</small></h3><span class="note" id="banCount"></span></div>
+      <div class="ph-grid" id="banGrid" data-kind="banners"></div>
+      <div class="sec-head"><h3 style="font-size:1.1rem">Fotos dos produtos <small class="note">a primeira aparece primeiro</small></h3><span class="note" id="fotoCount"></span></div>
+      <div class="ph-grid" id="fotoGrid" data-kind="fotos"></div>
+    </div>
   </div>
 </div>
 <nav class="tabbar" id="tabbar" aria-label="Navegação">

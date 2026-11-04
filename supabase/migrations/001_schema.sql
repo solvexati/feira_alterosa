@@ -1,5 +1,7 @@
 -- Feira Alterosa — esquema, RLS e Storage
--- Rode no SQL Editor do Supabase (ou com `supabase db push`).
+-- Cada barraca: 1 logo, até 5 imagens de banner e até 10 fotos de produtos.
+-- Hoje só o administrador cadastra e envia imagens. A coluna user_id e as policies
+-- de "dono" ficam prontas para quando a área do feirante voltar.
 
 create extension if not exists pgcrypto;
 
@@ -24,13 +26,13 @@ create table if not exists public.barracas (
   instagram text,                                                -- sem @
   descricao text check (char_length(descricao) <= 180),
   logo_path text,
-  banner_path text,
-  user_id uuid references auth.users(id) on delete set null,     -- conta do feirante
+  user_id uuid references auth.users(id) on delete set null,     -- conta do feirante (futuro)
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 create index if not exists barracas_user_id_idx on public.barracas(user_id);
 
+-- até 10 fotos de produtos por barraca
 create table if not exists public.barraca_fotos (
   id uuid primary key default gen_random_uuid(),
   barraca_id uuid not null references public.barracas(id) on delete cascade,
@@ -39,6 +41,16 @@ create table if not exists public.barraca_fotos (
   created_at timestamptz default now()
 );
 create index if not exists barraca_fotos_barraca_idx on public.barraca_fotos(barraca_id, ordem);
+
+-- até 5 imagens de banner por barraca
+create table if not exists public.barraca_banners (
+  id uuid primary key default gen_random_uuid(),
+  barraca_id uuid not null references public.barracas(id) on delete cascade,
+  path text not null,
+  ordem int not null,
+  created_at timestamptz default now()
+);
+create index if not exists barraca_banners_barraca_idx on public.barraca_banners(barraca_id, ordem);
 
 create table if not exists public.admins (
   user_id uuid primary key references auth.users(id) on delete cascade
@@ -55,60 +67,54 @@ returns uuid language sql stable security definer set search_path = public as $$
   select id from public.barracas where user_id = auth.uid() limit 1;
 $$;
 
--- updated_at automático
 create or replace function public.tocar_updated_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = public as $$
 begin new.updated_at = now(); return new; end $$;
 drop trigger if exists barracas_updated_at on public.barracas;
 create trigger barracas_updated_at before update on public.barracas
   for each row execute function public.tocar_updated_at();
 
--- no máximo 10 fotos por barraca
-create or replace function public.limitar_fotos()
-returns trigger language plpgsql as $$
+-- limite de imagens por barraca (o limite vem do argumento do gatilho)
+create or replace function public.limitar_imagens()
+returns trigger language plpgsql set search_path = public as $$
+declare
+  limite int := TG_ARGV[0]::int;
+  total int;
 begin
-  if (select count(*) from public.barraca_fotos where barraca_id = new.barraca_id) >= 10 then
-    raise exception 'Limite de 10 fotos por barraca.' using errcode = 'P0001';
+  execute format('select count(*) from public.%I where barraca_id = $1', TG_TABLE_NAME)
+    into total using new.barraca_id;
+  if total >= limite then
+    raise exception 'Limite de % imagens por barraca.', limite using errcode = 'P0001';
   end if;
   return new;
 end $$;
 drop trigger if exists barraca_fotos_limite on public.barraca_fotos;
 create trigger barraca_fotos_limite before insert on public.barraca_fotos
-  for each row execute function public.limitar_fotos();
-
--- o feirante só altera descrição e Instagram da PRÓPRIA barraca
-create or replace function public.atualizar_minha_barraca(p_descricao text, p_instagram text)
-returns void language plpgsql security definer set search_path = public as $$
-begin
-  if auth.uid() is null then raise exception 'Não autenticado.'; end if;
-  update public.barracas
-     set descricao = nullif(left(trim(coalesce(p_descricao, '')), 180), ''),
-         instagram = nullif(regexp_replace(trim(coalesce(p_instagram, '')), '^@', ''), '')
-   where user_id = auth.uid();
-end $$;
-revoke execute on function public.atualizar_minha_barraca(text, text) from public, anon;
-grant execute on function public.atualizar_minha_barraca(text, text) to authenticated;
+  for each row execute function public.limitar_imagens('10');
+drop trigger if exists barraca_banners_limite on public.barraca_banners;
+create trigger barraca_banners_limite before insert on public.barraca_banners
+  for each row execute function public.limitar_imagens('5');
 
 -- ===================== VIEW PÚBLICA (sem user_id) =====================
 create or replace view public.barracas_publicas as
-  select id, numero, nome, proprietario, categoria, whatsapp, instagram, descricao, logo_path, banner_path
+  select id, numero, nome, proprietario, categoria, whatsapp, instagram, descricao, logo_path
     from public.barracas;
 grant select on public.barracas_publicas to anon, authenticated;
 
 -- ===================== RLS =====================
-alter table public.feira_config  enable row level security;
-alter table public.barracas      enable row level security;
-alter table public.barraca_fotos enable row level security;
-alter table public.admins        enable row level security;
+alter table public.feira_config    enable row level security;
+alter table public.barracas        enable row level security;
+alter table public.barraca_fotos   enable row level security;
+alter table public.barraca_banners enable row level security;
+alter table public.admins          enable row level security;
 
--- feira_config: leitura pública, escrita só admin
 drop policy if exists "config leitura publica" on public.feira_config;
 create policy "config leitura publica" on public.feira_config for select using (true);
 drop policy if exists "config admin" on public.feira_config;
 create policy "config admin" on public.feira_config for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
 
--- barracas: tabela base só para admin (tudo) e dono (leitura). O público lê pela view.
+-- tabela base: admin (tudo) e dono (leitura). O público lê pela view.
 drop policy if exists "barracas admin" on public.barracas;
 create policy "barracas admin" on public.barracas for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
@@ -116,40 +122,38 @@ drop policy if exists "barracas dono le" on public.barracas;
 create policy "barracas dono le" on public.barracas for select to authenticated
   using (user_id = auth.uid());
 
--- barraca_fotos: leitura pública; admin tudo; feirante só na própria barraca
+-- fotos e banners: leitura pública; admin tudo; dono só na própria barraca
 drop policy if exists "fotos leitura publica" on public.barraca_fotos;
 create policy "fotos leitura publica" on public.barraca_fotos for select using (true);
 drop policy if exists "fotos admin" on public.barraca_fotos;
 create policy "fotos admin" on public.barraca_fotos for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
-drop policy if exists "fotos dono insere" on public.barraca_fotos;
-create policy "fotos dono insere" on public.barraca_fotos for insert to authenticated
-  with check (barraca_id = public.minha_barraca_id());
-drop policy if exists "fotos dono ordena" on public.barraca_fotos;
-create policy "fotos dono ordena" on public.barraca_fotos for update to authenticated
+drop policy if exists "fotos dono" on public.barraca_fotos;
+create policy "fotos dono" on public.barraca_fotos for all to authenticated
   using (barraca_id = public.minha_barraca_id()) with check (barraca_id = public.minha_barraca_id());
-drop policy if exists "fotos dono apaga" on public.barraca_fotos;
-create policy "fotos dono apaga" on public.barraca_fotos for delete to authenticated
-  using (barraca_id = public.minha_barraca_id());
 
--- admins: cada um só enxerga a própria linha (para o site saber se é admin)
+drop policy if exists "banners leitura publica" on public.barraca_banners;
+create policy "banners leitura publica" on public.barraca_banners for select using (true);
+drop policy if exists "banners admin" on public.barraca_banners;
+create policy "banners admin" on public.barraca_banners for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
 drop policy if exists "admins le proprio" on public.admins;
 create policy "admins le proprio" on public.admins for select to authenticated
   using (user_id = auth.uid());
 
 -- ===================== STORAGE =====================
--- bucket público para leitura, 2 MB por arquivo, só imagens
+-- bucket "feira": leitura pública, 2 MB por arquivo, só imagens
+-- pastas: capa/, barracas/{id}/logo/, barracas/{id}/banners/, barracas/{id}/fotos/
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('feira', 'feira', true, 2097152, array['image/*'])
 on conflict (id) do update set public = true, file_size_limit = 2097152, allowed_mime_types = array['image/*'];
 
--- admin: tudo dentro do bucket
 drop policy if exists "feira admin" on storage.objects;
 create policy "feira admin" on storage.objects for all to authenticated
   using (bucket_id = 'feira' and public.is_admin())
   with check (bucket_id = 'feira' and public.is_admin());
 
--- feirante: só barracas/{sua_barraca}/fotos/
 drop policy if exists "feira feirante fotos" on storage.objects;
 create policy "feira feirante fotos" on storage.objects for all to authenticated
   using (

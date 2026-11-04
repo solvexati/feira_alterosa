@@ -1,12 +1,9 @@
 /* Configuração pública do site.
-   - Deixe SUPABASE_URL e SUPABASE_ANON_KEY vazios para rodar no MODO DEMONSTRAÇÃO
-     (dados no navegador, igual ao feira-modelo.html).
-   - Preencha com os dados do seu projeto Supabase (Project Settings → API) para usar o banco real.
-   A chave "anon"/"publishable" é pública por natureza. NUNCA coloque a service_role aqui. */
+   - Com SUPABASE_URL e SUPABASE_ANON_KEY preenchidos, o site usa o banco real.
+   - Deixe os dois vazios para rodar no MODO DEMONSTRAÇÃO (dados só no navegador).
+   A chave "anon" é pública por natureza (a segurança vem das regras RLS do banco).
+   NUNCA coloque a service_role aqui. */
 window.FEIRA_CONFIG = {
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: "",
-  /* domínio técnico usado para transformar o WhatsApp do feirante em e-mail de login.
-     Precisa ser igual à variável EMAIL_FEIRANTE_DOMINIO da Vercel. */
-  EMAIL_FEIRANTE_DOMINIO: "feirante.feiraalterosa.app"
+  SUPABASE_URL: "https://debphfbpqinwstugjfgz.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYnBoZmJwcWlud3N0dWdqZmd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3NDU5OTYsImV4cCI6MjEwOTMyMTk5Nn0.E9kECt3ecT5K9hNuyu_dWiSr7zEjXHUjlUcRvxC9vFA"
 };
