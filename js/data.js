@@ -2,13 +2,13 @@
    window.FeiraBackend expõe a mesma interface em dois modos:
    - "supabase": banco real (Postgres + Auth + Storage), quando js/config.js está preenchido;
    - "demo": tudo no navegador (localStorage), como o feira-modelo.html.
-   Cada barraca tem: 1 logo, até 5 imagens de banner ("banners") e até 10 fotos de produtos ("fotos"). */
+   Cada barraca tem: 1 logo e até 10 fotos de produtos. A capa do site tem até 5 imagens. */
 (function () {
   "use strict";
   const C = window.FEIRA_CONFIG || {};
 
   const CATS = {"Hortifruti":"#3c7d3a","Comidas":"#a8523a","Laticínios":"#b0861a","Flores":"#a24a6c","Peixes":"#2f6a8f","Temperos":"#87552a","Artesanato":"#6a5a96","Bebidas":"#2a7d73","Doces":"#b35f78","Padaria":"#946032"};
-  const LIMITS = { fotos: 10, banners: 5 };
+  const LIMITS = { fotos: 10, capa: 5 };
   const SEED = [
     {id:1,num:12,name:"Hortifruti da Maria",owner:"Maria Aparecida",cat:"Hortifruti",wa:"31987654321",ig:"hortifrutidamaria",desc:"Verduras colhidas no sábado, frutas da estação e cheiro-verde."},
     {id:2,num:3,name:"Pastel do Seu João",owner:"João Batista",cat:"Comidas",wa:"31991234567",ig:"pasteldoseujoao",desc:"Pastel na hora: carne, queijo, palmito e o especial de bacalhau."},
@@ -36,20 +36,33 @@
       im.src = url;
     });
   }
-  /* largura máxima maxW, JPEG qualidade 0,8 (~200 KB para 1000px) */
-  async function compress(file, maxW, quality = 0.8) {
+  /* Tamanhos de envio (lado maior, em px) pensados para telas de alta densidade:
+     - foto de produto: 1280px → nítida no carrossel do celular (3x) e na coluna da web (2x)
+     - capa do site:    1920px → faixa larga da web
+     - logo:             300px → aparece com no máximo ~90px (×3 = 270px)
+     Formato WebP qualidade 0,82 (≈ 25–35% menor que JPEG com a mesma qualidade).
+     Se o navegador não gerar WebP, usa JPEG qualidade 0,85. Nunca aumenta uma imagem pequena. */
+  const SIZES = { foto: 1280, capa: 1920, logo: 300 };
+  /* se o navegador demorar demais para gerar o arquivo, desiste (e o código cai para JPEG) */
+  const canvasBlob = (c, type, q) => new Promise(r => { const t = setTimeout(() => r(null), 8000); c.toBlob(b => { clearTimeout(t); r(b); }, type, q); });
+  async function compress(file, kind) {
+    const maxSide = SIZES[kind] || 1280;
     const im = await loadImage(file);
     const W = im.naturalWidth || im.width, H = im.naturalHeight || im.height;
-    const w = Math.min(maxW, W), h = Math.round(H * w / W);
+    const scale = Math.min(1, maxSide / Math.max(W, H));
+    const w = Math.round(W * scale), h = Math.round(H * scale);
     const c = document.createElement("canvas");
     c.width = w; c.height = h;
     const ctx = c.getContext("2d");
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
     ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
     ctx.drawImage(im, 0, 0, w, h);
-    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", quality));
+    let blob = await canvasBlob(c, "image/webp", 0.82);
+    if (!blob || blob.type !== "image/webp") blob = await canvasBlob(c, "image/jpeg", 0.85);
     if (!blob) throw new Error("Não foi possível preparar essa imagem.");
     return blob;
   }
+  const extOf = blob => blob.type === "image/webp" ? "webp" : "jpg";
   const blobToDataURL = blob => new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(r.result);
@@ -70,7 +83,7 @@
      MODO DEMONSTRAÇÃO (localStorage)
      ===================================================================== */
   function DemoBackend() {
-    const K_ST = "feira-barracas-v6", K_CFG = "feira-config-v3";
+    const K_ST = "feira-barracas-v7", K_CFG = "feira-config-v3";
     const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch (e) { return d; } };
     const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
     const ss = {
@@ -79,18 +92,18 @@
       del: k => { try { sessionStorage.removeItem(k); } catch (e) {} }
     };
     let raw = load(K_ST, null);
-    if (!Array.isArray(raw)) raw = SEED.map(s => ({ ...s, logo: null, banners: [], fotos: Array.from({ length: 10 }, (_, i) => "demo:" + (s.id * 10 + i)) }));
-    raw.forEach(s => { s.banners = s.banners || []; s.fotos = s.fotos || []; });
+    if (!Array.isArray(raw)) raw = SEED.map(s => ({ ...s, logo: null, fotos: Array.from({ length: 10 }, (_, i) => "demo:" + (s.id * 10 + i)) }));
+    raw.forEach(s => { s.fotos = s.fotos || []; });
     let cfg = Object.assign({ ...DEFAULT_CFG }, load(K_CFG, {}));
     let admin = ss.get("feira-admin") === "1";
     const save = () => store(K_ST, raw);
     const find = id => raw.find(s => String(s.id) === String(id));
     const imgs = list => list.map((p, i) => ({ id: i, url: photoSrc(p) }));
     const view = s => {
-      const banners = imgs(s.banners);
+      const photos = imgs(s.fotos);
       return {
         id: s.id, num: s.num, name: s.name, owner: s.owner, cat: s.cat, wa: s.wa, ig: s.ig || "", desc: s.desc || "",
-        logo: s.logo || null, banners, img: banners[0] ? banners[0].url : null, photos: imgs(s.fotos)
+        logo: s.logo || null, img: photos[0] ? photos[0].url : null, photos
       };
     };
 
@@ -114,7 +127,7 @@
         if (logo !== undefined) data.logo = logo ? await blobToDataURL(logo) : null;
         let id = editId;
         if (editId != null) Object.assign(find(editId), data);
-        else { id = Date.now(); raw.push({ id, fotos: [], banners: [], logo: null, ...data }); }
+        else { id = Date.now(); raw.push({ id, fotos: [], logo: null, ...data }); }
         save();
         return id;
       },
@@ -137,7 +150,7 @@
   function SupaBackend() {
     const sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
     const BUCKET = "feira";
-    const TABLE = { fotos: "barraca_fotos", banners: "barraca_banners" };
+    const TABLE = { fotos: "barraca_fotos" };
     const pubUrl = p => p ? sb.storage.from(BUCKET).getPublicUrl(p).data.publicUrl : null;
     const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     const code = n => String(n).padStart(2, "0") + "-777";
@@ -181,13 +194,12 @@
       mode: "supabase",
       async init() { await checkAdmin(); },
       async load() {
-        const [c, b, f, bn] = await Promise.all([
+        const [c, b, f] = await Promise.all([
           sb.from("feira_config").select("*").eq("id", 1).maybeSingle(),
           sb.from("barracas_publicas").select("*"),
-          sb.from("barraca_fotos").select("id,barraca_id,path,ordem").order("ordem"),
-          sb.from("barraca_banners").select("id,barraca_id,path,ordem").order("ordem")
+          sb.from("barraca_fotos").select("id,barraca_id,path,ordem").order("ordem")
         ]);
-        for (const r of [c, b, f, bn]) if (r.error) throw r.error;
+        for (const r of [c, b, f]) if (r.error) throw r.error;
         const conf = c.data || {};
         cache.coverPaths = conf.fotos_capa || [];
         const cfg = {
@@ -199,14 +211,14 @@
           (rows || []).forEach(x => (out[x.barraca_id] = out[x.barraca_id] || []).push({ id: x.id, path: x.path, url: pubUrl(x.path) }));
           return out;
         };
-        const fotos = group(f.data), banners = group(bn.data);
+        const fotos = group(f.data);
         cache.stalls = sortStalls((b.data || []).map(r => {
-          const bl = banners[r.id] || [];
+          const ph = fotos[r.id] || [];
           return {
             id: r.id, num: r.numero, name: r.nome, owner: r.proprietario, cat: r.categoria, wa: r.whatsapp,
             ig: r.instagram || "", desc: r.descricao || "",
             logo: pubUrl(r.logo_path), logoPath: r.logo_path,
-            banners: bl, img: bl[0] ? bl[0].url : null, photos: fotos[r.id] || []
+            img: ph[0] ? ph[0].url : null, photos: ph
           };
         }));
         return { cfg, stalls: cache.stalls };
@@ -228,7 +240,7 @@
         let paths = old;
         if (covers) {
           paths = [];
-          for (let i = 0; i < covers.length; i++) paths.push(await upload(`capa/${uid()}-${i + 1}.jpg`, covers[i]));
+          for (let i = 0; i < covers.length; i++) paths.push(await upload(`capa/${uid()}-${i + 1}.${extOf(covers[i])}`, covers[i]));
         }
         const { error } = await sb.from("feira_config").upsert({
           id: 1, nome: data.name, cidade: data.city || null, whatsapp: data.wa || null, frase_capa: data.tag || null, fotos_capa: paths
@@ -252,7 +264,7 @@
         }
         if (logo !== undefined) {
           const prev = (stallById(id) || {}).logoPath;
-          const path = logo ? await upload(`barracas/${id}/logo/${uid()}.jpg`, logo) : null;
+          const path = logo ? await upload(`barracas/${id}/logo/${uid()}.${extOf(logo)}`, logo) : null;
           const { error } = await sb.from("barracas").update({ logo_path: path }).eq("id", id);
           if (error) fail("A barraca foi salva, mas a logo não: " + error.message);
           if (prev) await removeFiles([prev]);
@@ -261,23 +273,23 @@
       },
       async deleteStall(id) {
         const files = await listFiles(`barracas/${id}`);
-        const { error } = await sb.from("barracas").delete().eq("id", id); /* fotos e banners saem em cascata */
+        const { error } = await sb.from("barracas").delete().eq("id", id); /* as fotos saem em cascata */
         if (error) fail(friendly(error));
         await removeFiles(files);
       },
       async addImages(stallId, kind, blobs) {
-        const list = stallById(stallId)[kind === "fotos" ? "photos" : "banners"];
+        const list = stallById(stallId).photos;
         let ordem = list.length;
         const rows = [];
         try {
-          for (const bl of blobs) rows.push({ barraca_id: stallId, path: await upload(`barracas/${stallId}/${kind}/${uid()}.jpg`, bl), ordem: ordem++ });
+          for (const bl of blobs) rows.push({ barraca_id: stallId, path: await upload(`barracas/${stallId}/${kind}/${uid()}.${extOf(bl)}`, bl), ordem: ordem++ });
           const { error } = await sb.from(TABLE[kind]).insert(rows);
-          if (error) fail(/Limite/.test(error.message) ? `Só cabem ${LIMITS[kind]} imagens aqui.` : friendly(error));
+          if (error) fail(/Limite/.test(error.message) ? `Só cabem ${LIMITS.fotos} fotos por barraca.` : friendly(error));
         } catch (e) { await removeFiles(rows.map(r => r.path)); throw e; }
         return true;
       },
       async removeImage(stallId, kind, i) {
-        const list = stallById(stallId)[kind === "fotos" ? "photos" : "banners"], p = list[i];
+        const list = stallById(stallId).photos, p = list[i];
         const { error } = await sb.from(TABLE[kind]).delete().eq("id", p.id);
         if (error) fail(friendly(error));
         await removeFiles([p.path]);
@@ -285,7 +297,7 @@
         for (let k = i; k < rest.length; k++) await sb.from(TABLE[kind]).update({ ordem: k }).eq("id", rest[k].id);
       },
       async moveImage(stallId, kind, i, j) {
-        const list = stallById(stallId)[kind === "fotos" ? "photos" : "banners"];
+        const list = stallById(stallId).photos;
         const r1 = await sb.from(TABLE[kind]).update({ ordem: j }).eq("id", list[i].id);
         const r2 = await sb.from(TABLE[kind]).update({ ordem: i }).eq("id", list[j].id);
         if (r1.error || r2.error) fail("Não foi possível mudar a ordem.");

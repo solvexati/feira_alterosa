@@ -122,7 +122,7 @@
           <label class="f">Cidade<input id="cCity"></label>
           <label class="f">WhatsApp da organização<input id="cWa" inputmode="tel"></label>
           <label class="f">Frase da capa<input id="cTag" maxlength="90"></label>
-          <label class="f full">Fotos da capa <small>até 3 imagens; elas giram no topo do site</small><input id="cImgs" type="file" accept="image/*" multiple></label>
+          <label class="f full">Fotos da capa <small>até 5 imagens; elas giram no topo do site</small><input id="cImgs" type="file" accept="image/*" multiple></label>
           <div class="prev full" id="cPrev"></div>
           <p class="ok full" id="cfgOk" hidden>Dados da feira salvos.</p>
           <p class="err full" id="cfgErr" hidden></p>
@@ -157,13 +157,11 @@
       <p class="err full" id="formErr" hidden></p>
       <div class="actions full"><button class="btn" type="submit" id="saveBtn">Cadastrar barraca</button><button class="btn ghost" type="button" id="cancelEdit">Cancelar</button></div>
     </form>
-    <p class="note" id="imgsLater">Depois de cadastrar, aqui mesmo você coloca o banner (até 5 imagens) e as fotos dos produtos (até 10).</p>
+    <p class="note" id="imgsLater">Depois de cadastrar, aqui mesmo você coloca as fotos dos produtos (até 10).</p>
     <div id="imgsBox" class="view" style="gap:14px" hidden>
       <p class="ok" id="imgsOk" hidden></p>
       <p class="err" id="imgsErr" hidden></p>
-      <div class="sec-head"><h3 style="font-size:1.1rem">Banner <small class="note">horizontal · gira no cartão da barraca</small></h3><span class="note" id="banCount"></span></div>
-      <div class="ph-grid" id="banGrid" data-kind="banners"></div>
-      <div class="sec-head"><h3 style="font-size:1.1rem">Fotos dos produtos <small class="note">a primeira aparece primeiro</small></h3><span class="note" id="fotoCount"></span></div>
+      <div class="sec-head"><h3 style="font-size:1.1rem">Fotos dos produtos <small class="note">a primeira também é a imagem do cartão da loja</small></h3><span class="note" id="fotoCount"></span></div>
       <div class="ph-grid" id="fotoGrid" data-kind="fotos"></div>
     </div>
   </div>

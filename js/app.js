@@ -1,6 +1,6 @@
 /* Feira Alterosa — telas e comportamento (portado do feira-modelo.html).
    As rotas usam o #hash, como no modelo: #inicio, #barracas, #mapa, #barraca-12, #admin.
-   (A área do feirante foi retirada por enquanto: o admin coloca logo, banner e fotos.) */
+   (A área do feirante foi retirada por enquanto: o admin coloca a logo e as 10 fotos de produtos.) */
 (function () {
   "use strict";
   const B = window.FeiraBackend;
@@ -26,9 +26,9 @@
   const same = (a, b) => String(a) === String(b);
   const reduceMotion = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
   const thumb = s => `<span class="thumb" style="background:${color(s)}">${s.logo ? `<img src="${esc(s.logo)}" alt="" loading="lazy">` : `<span>${esc(initials(s.name))}</span>`}</span>`;
-  /* banner: até 5 imagens que se alternam (fade a cada 4s); sem imagens, listras na cor da categoria */
-  const banner = (s, cls = "ban") => (s.banners && s.banners.length)
-    ? `<div class="${cls}">${s.banners.map((b, i) => `<img class="bimg${i ? "" : " on"}" src="${esc(b.url)}" alt="${i ? "" : "Banner de " + esc(s.name)}" loading="lazy">`).join("")}</div>`
+  /* imagem do cartão da loja: a 1ª foto de produto; sem fotos, listras na cor da categoria com as iniciais */
+  const banner = (s, cls = "ban") => s.img
+    ? `<div class="${cls}"><img src="${esc(s.img)}" alt="${esc(s.name)}" loading="lazy"></div>`
     : `<div class="${cls}" style="background:repeating-linear-gradient(135deg,${color(s)} 0 28px,color-mix(in srgb,${color(s)} 80%,#000) 28px 56px)"><span class="ini">${esc(initials(s.name))}</span></div>`;
   const waLink = (n, msg) => `https://wa.me/55${digits(n)}?text=${encodeURIComponent(msg)}`;
 
@@ -157,8 +157,7 @@
 
   /* ---------- carrossel de fotos da barraca (passa a cada 2s) ---------- */
   function gallery(s) {
-    /* fotos dos produtos; se ainda não houver, usa as imagens do banner */
-    const ph = (s.photos && s.photos.length) ? s.photos : (s.banners || []); if (!ph.length) return banner(s);
+    const ph = s.photos || []; if (!ph.length) return banner(s);
     return `<div class="gal"><div class="gal-track" id="galTrack">${ph.map((p, i) => `<img src="${esc(p.url)}" alt="Foto ${i + 1} de ${esc(s.name)}" ${i > 1 ? 'loading="lazy"' : ""}>`).join("")}</div>
       <span class="gal-count" id="galCount">1 / ${ph.length}</span>
       ${ph.length > 1 ? `<button class="arrow l" data-gal="-1" aria-label="Foto anterior">${ARROW_L}</button><button class="arrow r" data-gal="1" aria-label="Próxima foto">${ARROW}</button>
@@ -257,9 +256,9 @@
   function fillCfg() { $("#cName").value = cfg.name; $("#cCity").value = cfg.city || ""; $("#cWa").value = fmtPhone(cfg.wa); $("#cTag").value = cfg.tag || ""; pendingImgs = null; $("#cImgs").value = ""; showCfgPrev(cfg.imgs); }
   function showCfgPrev(list) { $("#cPrev").innerHTML = (list && list.length ? list.map(s => `<img src="${esc(s)}" alt="">`).join("") + `<button type="button" class="btn ghost sm" id="rmCover">Usar foto padrão</button>` : `<span class="note">Sem fotos novas: o site usa a foto padrão da feira.</span>`); }
   $("#cImgs").addEventListener("change", async e => {
-    const files = [...e.target.files].slice(0, 3);
+    const files = [...e.target.files].slice(0, LIMITS.capa);
     try {
-      pendingImgs = await Promise.all(files.map(async f => { const blob = await compress(f, 1200); return { blob, url: URL.createObjectURL(blob) }; }));
+      pendingImgs = await Promise.all(files.map(async f => { const blob = await compress(f, "capa"); return { blob, url: URL.createObjectURL(blob) }; }));
       showCfgPrev(pendingImgs.map(p => p.url));
     } catch (err) { $("#cfgErr").textContent = err.message; $("#cfgErr").hidden = false; }
   });
@@ -287,7 +286,7 @@
   function showPrev() { $("#fPrev").innerHTML = logo ? `<img src="${esc(logo.url)}" alt="Logo"><button type="button" class="btn ghost sm" id="rmImgs">Remover logo</button>` : ""; }
   $("#fLogo").addEventListener("change", async e => {
     if (!e.target.files[0]) return;
-    const blob = await compress(e.target.files[0], 300);
+    const blob = await compress(e.target.files[0], "logo");
     logo = { blob, url: URL.createObjectURL(blob) }; logoChanged = true; showPrev();
   });
   $("#fPrev").addEventListener("click", e => { if (e.target.id === "rmImgs") { logo = null; logoChanged = true; $("#fLogo").value = ""; showPrev(); } });
@@ -296,7 +295,7 @@
     fillCfg();
     const list = [...stalls].sort((a, b) => a.num - b.num);
     $("#adminCount").textContent = `${stalls.length} cadastradas · ${48 - stalls.length} vagas`;
-    $("#adminList").innerHTML = list.length ? list.map(s => `<div class="a-row">${thumb(s)}<span class="t"><b>${code(s.num)} · ${esc(s.name)}</b><small>${esc(s.owner)} · ${esc(fmtPhone(s.wa))} · ${(s.photos || []).length} fotos · ${(s.banners || []).length} banners</small></span>
+    $("#adminList").innerHTML = list.length ? list.map(s => `<div class="a-row">${thumb(s)}<span class="t"><b>${code(s.num)} · ${esc(s.name)}</b><small>${esc(s.owner)} · ${esc(fmtPhone(s.wa))} · ${(s.photos || []).length} fotos</small></span>
       ${same(confirmId, s.id) ? `<span class="confirm">Remover? <button class="btn danger sm" data-del="${esc(s.id)}">Remover</button><button class="btn ghost sm" data-nodel="1">Cancelar</button></span>`
        : `<span class="actions"><button class="btn ghost sm" data-edit="${esc(s.id)}">Editar</button><button class="btn ghost sm" data-ask="${esc(s.id)}">Remover</button></span>`}</div>`).join("")
       : `<p class="empty">Nenhuma barraca cadastrada ainda. Clique em “+ Nova barraca”.</p>`;
@@ -349,22 +348,22 @@
       const id = await B.saveStall(editId, data, logoChanged ? (logo ? logo.blob : null) : undefined);
       await refresh();
       if (isNew) {
-        /* continua no modal para colocar banner e fotos */
+        /* continua no modal para colocar as fotos */
         openEdit(stalls.find(x => same(x.id, id)));
-        imgMsg(true, `Barraca ${code(num)} cadastrada e já aparece no site. Agora coloque o banner e as fotos.`);
+        imgMsg(true, `Barraca ${code(num)} cadastrada e já aparece no site. Agora coloque as fotos dos produtos.`);
       } else { closeModal(); flash(`Barraca ${code(num)} atualizada.`); }
     } catch (ex) { err.textContent = ex.message; err.hidden = false; btn.textContent = old; }
     finally { btn.disabled = false; }
   });
 
-  /* banner (até 5) e fotos dos produtos (até 10), dentro do modal */
+  /* fotos dos produtos (até 10), dentro do modal */
   const editing = () => stalls.find(x => same(x.id, editId));
-  const listOf = (s, kind) => (kind === "fotos" ? s.photos : s.banners) || [];
+  const listOf = s => s.photos || [];
   function imgMsg(ok, txt) { const a = $(ok ? "#imgsOk" : "#imgsErr"), b = $(ok ? "#imgsErr" : "#imgsOk"); b.hidden = true; a.textContent = txt; a.hidden = false; clearTimeout(a._t); a._t = setTimeout(() => a.hidden = true, 5000); }
   function renderGrid(kind) {
     const s = editing(); if (!s) return;
-    const ph = listOf(s, kind), max = LIMITS[kind], grid = $(kind === "fotos" ? "#fotoGrid" : "#banGrid");
-    $(kind === "fotos" ? "#fotoCount" : "#banCount").textContent = `${ph.length} de ${max}`;
+    const ph = listOf(s), max = LIMITS.fotos, grid = $("#fotoGrid");
+    $("#fotoCount").textContent = `${ph.length} de ${max}`;
     grid.innerHTML = Array.from({ length: max }, (_, i) => {
       if (ph[i]) return `<div class="ph"><img src="${esc(ph[i].url)}" alt="Imagem ${i + 1}" loading="lazy"><span class="ph-n">${i + 1}</span>
         <div class="ph-act"><button type="button" data-mv="${i}" data-d="-1" ${i ? "" : "disabled"} aria-label="Mover para antes">‹</button><button type="button" data-rm="${i}">Remover</button><button type="button" data-mv="${i}" data-d="1" ${i < ph.length - 1 ? "" : "disabled"} aria-label="Mover para depois">›</button></div></div>`;
@@ -372,7 +371,7 @@
       return `<div class="ph empty"><span>${i + 1}</span></div>`;
     }).join("");
   }
-  function renderImgs() { renderGrid("banners"); renderGrid("fotos"); }
+  function renderImgs() { renderGrid("fotos"); }
   let imgBusy = false;
   async function imgOp(fn) {
     if (imgBusy) return; imgBusy = true;
@@ -387,7 +386,7 @@
     if (all.length > room) imgMsg(false, `Só cabem mais ${room} imagem(ns). As demais foram ignoradas.`);
     if (!files.length) return;
     imgOp(async () => {
-      const blobs = await Promise.all(files.map(f => compress(f, 1000)));
+      const blobs = await Promise.all(files.map(f => compress(f, "foto")));
       const saved = await B.addImages(s.id, kind, blobs);
       if (saved) imgMsg(true, `${files.length} imagem(ns) adicionada(s). Já aparecem no site.`);
       else imgMsg(false, "As imagens aparecem agora, mas o navegador ficou sem espaço para guardá-las (modo demonstração).");
@@ -406,16 +405,6 @@
     $("#adminDemoNote").hidden = !demo;
     /* no Supabase o campo continua "Usuário": aceita o usuário ou o e-mail completo */
   }
-  /* gira os banners com mais de uma imagem */
-  setInterval(() => {
-    if (document.hidden) return;
-    document.querySelectorAll(".ban").forEach(b => {
-      const imgs = b.querySelectorAll(".bimg"); if (imgs.length < 2) return;
-      const i = [...imgs].findIndex(x => x.classList.contains("on"));
-      imgs[i].classList.remove("on"); imgs[(i + 1) % imgs.length].classList.add("on");
-    });
-  }, 4000);
-
   async function boot() {
     setupMode();
     /* /mapa, /barracas e ?mapa=1 abrem a tela correspondente */
