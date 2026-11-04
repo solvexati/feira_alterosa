@@ -1,0 +1,19 @@
+{
+  "name": "feira-alterosa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site da Feira Alterosa (Betim/MG) — HTML, CSS e JavaScript + Supabase",
+  "type": "module",
+  "scripts": {
+    "demo": "npx --yes serve@14.2.4 . -l 3000",
+    "dev": "vercel dev",
+    "foto": "node scripts/extrair-foto.mjs",
+    "contas": "node --env-file=.env scripts/criar-contas.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  },
+  "engines": {
+    "node": ">=20.6"
+  }
+}

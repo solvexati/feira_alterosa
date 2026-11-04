@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f5f5f0">
+<title>Feira Alterosa · Betim</title>
+<meta name="description" content="Barracas da Feira Alterosa, em Betim. Encontre o feirante e fale direto pelo WhatsApp.">
+<meta property="og:title" content="Feira Alterosa · Betim">
+<meta property="og:description" content="Todo domingo, das 7h às 13h, em Betim. Fale com o feirante direto pelo WhatsApp.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/capa-feira.jpg">
+<link rel="icon" href="assets/icone.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@500;600;700&family=Manrope:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap"><div class="col top-in">
+    <button class="logo" data-nav="inicio" aria-label="Ir para o início">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12 6 4h20l3 8Z" fill="var(--brand)"/><path d="M11 4 9.5 12M16 4v8M21 4l1.5 8" stroke="var(--bg)" stroke-width="1.6"/><path d="M5 12v15h22V12" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/><circle cx="11" cy="21" r="2.4" fill="var(--brand)"/><circle cx="16.5" cy="21" r="2.4" fill="var(--brand)" opacity=".6"/><circle cx="22" cy="21" r="2.4" fill="var(--brand)" opacity=".35"/></svg>
+      <b id="brand">Feira Alterosa</b>
+    </button>
+    <nav class="topnav" aria-label="Principal">
+      <button data-nav="inicio" data-tab="inicio">Início</button>
+      <button data-nav="barracas" data-tab="barracas">Barracas</button>
+      <button data-nav="mapa" data-tab="mapa">Mapa</button>
+      <button data-nav="vendedor" data-tab="vendedor">Área do feirante</button>
+    </nav>
+    <div style="display:flex;align-items:center;gap:4px">
+    <button class="adm" data-nav="admin" aria-label="Área do administrador">ADM</button>
+    <button class="burger" id="openMenu" aria-label="Abrir menu" aria-controls="drawer" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    </div>
+  </div></div>
+</header>
+
+
+<div class="scrim" id="scrim" hidden></div>
+<nav class="drawer" id="drawer" aria-label="Menu">
+  <div class="dr-head"><b style="font-family:var(--head);font-size:1.2rem">Menu</b><button class="btn ghost sm" id="closeMenu">Fechar</button></div>
+  <div class="nav">
+    <button data-nav="inicio">Início</button>
+    <button data-nav="barracas">Todas as barracas</button>
+    <button data-nav="mapa">Mapa da feira</button>
+    <button data-nav="vendedor">Área do feirante</button>
+  </div>
+  <span class="dr-label">Barracas</span>
+  <ul class="dr-list" id="drList"></ul>
+</nav>
+
+<main class="wrap"><div class="col">
+
+  <!-- INÍCIO -->
+  <section class="view" id="v-inicio">
+    <div class="hero" id="hero" aria-roledescription="carrossel"></div>
+
+    <div class="home-actions">
+    <button class="big" data-nav="barracas">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 4.5 4h15L21 9.5"/><path d="M3 9.5c0 1.4 1.1 2.5 2.5 2.5S8 10.9 8 9.5c0 1.4 1.1 2.5 2.5 2.5h3c1.4 0 2.5-1.1 2.5-2.5 0 1.4 1.1 2.5 2.5 2.5S21 10.9 21 9.5"/><path d="M4.5 12v8h15v-8M9.5 20v-5h5v5"/></svg></span>
+      <span class="t"><b>Barracas</b><small id="bigCount">Veja todas as barracas da feira</small></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+
+    <div class="home-search">
+    <label class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="homeQ" type="search" placeholder="Buscar barraca, feirante ou número…" aria-label="Buscar barraca" enterkeyhint="search">
+    </label>
+    <p class="hint">Ex.: “loja da Maria”, “pastel”, “12”</p>
+    <div class="cards" id="homeResults" hidden></div>
+    </div></div>
+
+    <div class="sec-head"><h2>Na feira hoje</h2><button class="see" data-nav="barracas">Ver todas<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></i></button></div>
+    <div class="strip" id="strip"></div>
+  </section>
+
+  <!-- LISTA -->
+  <section class="view" id="v-barracas" hidden>
+    <div class="filters">
+    <div class="title-block"><span class="eyebrow" id="eyebrow">Betim</span><h1>Barracas</h1><p>Encontre suas barracas favoritas.</p></div>
+    <label class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Buscar barraca…" aria-label="Buscar barraca">
+    </label>
+    <button class="outline-btn" id="catBtn" aria-expanded="false" aria-controls="cats"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5Z"/></svg><span id="catLabel">Categorias</span></button>
+    <div class="cats" id="cats" hidden></div>
+    <button class="outline-btn" id="mapBtn" aria-expanded="false" aria-controls="mapBox"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linejoin="round"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14"/></svg>Mapa da feira</button>
+    </div>
+    <div class="results">
+    <div class="map-box" id="mapBox" hidden><div class="map-scroll"><div class="map" id="map"></div></div><span class="note">Toque numa barraca ocupada para abrir.</span></div>
+    <div class="cards" id="cards"></div>
+    </div>
+  </section>
+
+  <!-- DETALHE -->
+  <section class="view" id="v-barraca" hidden></section>
+
+  <!-- FEIRANTE -->
+  <section class="view" id="v-vendedor" hidden>
+    <div class="panel" id="sellerLogin" style="max-width:420px;width:100%;margin-inline:auto">
+      <h2 style="font-size:1.6rem;color:var(--brand)">Área do feirante</h2>
+      <p class="note" style="margin:0">Entre para colocar as fotos dos seus produtos na sua barraca.</p>
+      <form id="sellerForm" class="form" style="grid-template-columns:1fr">
+        <label class="f">Seu WhatsApp<input id="su" inputmode="tel" autocomplete="username" required placeholder="(31) 98765-4321"></label>
+        <label class="f">Senha<input id="sp" type="password" autocomplete="current-password" required></label>
+        <p class="err" id="sellerErr" hidden>WhatsApp ou senha não conferem. A senha é passada pela organização da feira.</p>
+        <div class="actions"><button class="btn" type="submit" id="sellerBtn">Entrar</button><button class="btn ghost" type="button" data-nav="inicio">Voltar ao site</button></div>
+        <span class="note" id="sellerDemoNote" hidden>No modelo: WhatsApp <b>(31) 98765-4321</b>, senha <b>1234</b> (Hortifruti da Maria).</span>
+      </form>
+    </div>
+
+    <div id="sellerBox" class="view" hidden>
+      <div class="sec-head" style="flex-wrap:wrap">
+        <div><span class="eyebrow" id="sEyebrow">Barraca</span><h2 id="sName" style="margin-top:4px">Minha barraca</h2></div>
+        <div class="actions"><button class="btn ghost sm" id="sView">Ver minha barraca</button><button class="btn ghost sm" id="sOut">Sair</button></div>
+      </div>
+
+      <div class="panel">
+        <div class="sec-head"><h3 style="font-size:1.25rem">Fotos dos produtos</h3><span class="note" id="sCount"></span></div>
+        <p class="note" style="margin:0">Até 10 fotos. A primeira aparece primeiro no carrossel. Use as setas para mudar a ordem.</p>
+        <div class="ph-grid" id="sGrid"></div>
+        <p class="ok" id="sOk" hidden></p>
+        <p class="err" id="sErr" hidden></p>
+      </div>
+
+      <div class="panel">
+        <h3 style="font-size:1.25rem">Sobre a barraca</h3>
+        <form id="sInfo" class="form">
+          <label class="f full">Descrição<textarea id="sDesc" rows="3" maxlength="180"></textarea></label>
+          <label class="f">Instagram<input id="sIg" placeholder="@suabarraca"></label>
+          <div class="actions full"><button class="btn" type="submit">Salvar</button></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAINEL -->
+  <section class="view" id="v-admin" hidden>
+    <div class="panel" id="loginBox" style="max-width:420px;width:100%;margin-inline:auto">
+      <h2 style="font-size:1.6rem;color:var(--brand)">Área do administrador</h2>
+      <form id="loginForm" class="form" style="grid-template-columns:1fr">
+        <label class="f"><span id="luLabel">Usuário</span><input id="lu" autocomplete="username" required></label>
+        <label class="f">Senha<input id="lp" type="password" autocomplete="current-password" required></label>
+        <p class="err" id="loginErr" hidden>Usuário ou senha incorretos. Confira e tente de novo.</p>
+        <div class="actions"><button class="btn" type="submit" id="loginBtn">Entrar</button><button class="btn ghost" type="button" data-nav="inicio">Voltar ao site</button></div>
+        <span class="note" id="adminDemoNote" hidden>No modelo: usuário <b>admin</b>, senha <b>feira123</b>.</span>
+      </form>
+    </div>
+
+    <div id="panelBox" class="view" hidden>
+      <div class="sec-head"><h2>Painel</h2><div class="actions"><button class="btn ghost sm" data-nav="inicio">Ver site</button><button class="btn ghost sm" id="logout">Sair</button></div></div>
+
+      <div class="panel">
+        <h3 style="font-size:1.25rem">Dados da feira</h3>
+        <form id="cfgForm" class="form">
+          <label class="f">Nome da feira<input id="cName" required></label>
+          <label class="f">Cidade<input id="cCity"></label>
+          <label class="f">WhatsApp da organização<input id="cWa" inputmode="tel"></label>
+          <label class="f">Frase da capa<input id="cTag" maxlength="90"></label>
+          <label class="f full">Fotos da capa <small>até 3 imagens; elas giram no topo do site</small><input id="cImgs" type="file" accept="image/*" multiple></label>
+          <div class="prev full" id="cPrev"></div>
+          <p class="ok full" id="cfgOk" hidden>Dados da feira salvos.</p>
+          <p class="err full" id="cfgErr" hidden></p>
+          <div class="actions full"><button class="btn" type="submit" id="cfgBtn">Salvar dados da feira</button></div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="sec-head" style="flex-wrap:wrap"><div><h3 style="font-size:1.25rem">Barracas cadastradas</h3><span class="note" id="adminCount"></span></div><button class="btn" id="newStall" type="button">+ Nova barraca</button></div>
+        <p class="ok" id="formOk" hidden></p>
+        <div class="admin-list" id="adminList"></div>
+      </div>
+    </div>
+  </section>
+</div></main>
+
+
+<div class="modal" id="stallModal" hidden>
+  <div class="modal-scrim" data-close-modal></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <div class="sheet-head"><h3 id="formTitle">Nova barraca</h3><button class="x" type="button" data-close-modal aria-label="Fechar">×</button></div>
+    <form id="stallForm" class="form">
+      <label class="f">Nome da barraca<input id="fName" required placeholder="Hortifruti da Maria"></label>
+      <label class="f">Proprietário(a)<input id="fOwner" required placeholder="Maria Aparecida"></label>
+      <label class="f">Número da barraca <small>1 a 48 · o final -777 entra sozinho</small><input id="fNum" type="number" min="1" max="48" required></label>
+      <label class="f">Categoria<select id="fCat"></select></label>
+      <label class="f">WhatsApp <small>com DDD</small><input id="fWa" inputmode="tel" required placeholder="(31) 98765-4321"></label>
+      <label class="f">Instagram <small>opcional</small><input id="fIg" placeholder="@lojadamaria"></label>
+      <label class="f">Senha do feirante <small id="fPinHint">para ele entrar e subir fotos</small><input id="fPin" required minlength="4" maxlength="12" placeholder="Ex.: 4821"></label>
+      <label class="f full">Descrição curta<textarea id="fDesc" rows="2" maxlength="180" placeholder="O que a barraca vende"></textarea></label>
+      <label class="f">Logo <small>quadrada</small><input id="fLogo" type="file" accept="image/*"></label>
+      <label class="f">Banner <small>horizontal</small><input id="fBan" type="file" accept="image/*"></label>
+      <div class="prev full" id="fPrev"></div>
+      <p class="err full" id="formErr" hidden></p>
+      <div class="actions full"><button class="btn" type="submit" id="saveBtn">Cadastrar barraca</button><button class="btn ghost" type="button" id="cancelEdit">Cancelar</button></div>
+    </form>
+  </div>
+</div>
+<nav class="tabbar" id="tabbar" aria-label="Navegação">
+  <button data-nav="inicio" data-tab="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg><span>Início</span></button>
+  <button data-nav="barracas" data-tab="barracas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 4.5 4h15L21 9.5"/><path d="M3 9.5a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 3 0"/><path d="M4.5 12v8h15v-8"/></svg><span>Barracas</span></button>
+  <button data-search="1" data-tab="buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Buscar</span></button>
+  <button data-nav="mapa" data-tab="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14"/></svg><span>Mapa</span></button>
+</nav>
+<a class="fab" id="fab" target="_blank" rel="noopener" aria-label="Falar com a organização no WhatsApp"></a>
+
+<!-- Configuração (URL e chave pública do Supabase). Deixe vazio para o modo demonstração. -->
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
