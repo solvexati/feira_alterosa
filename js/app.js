@@ -25,7 +25,10 @@
   const color = s => CATS[s.cat] || "#2e6b45";
   const same = (a, b) => String(a) === String(b);
   const reduceMotion = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
-  const thumb = s => `<span class="thumb" style="background:${color(s)}">${s.logo ? `<img src="${esc(s.logo)}" alt="" loading="lazy">` : `<span>${esc(initials(s.name))}</span>`}</span>`;
+  /* logo: mostrada inteira (sem cortar) sobre fundo branco; sem logo, iniciais na cor da categoria */
+  const thumb = s => s.logo
+    ? `<span class="thumb has-logo"><img src="${esc(s.logo)}" alt="Logo de ${esc(s.name)}" loading="lazy"></span>`
+    : `<span class="thumb" style="background:${color(s)}"><span>${esc(initials(s.name))}</span></span>`;
   /* imagem do cartão da loja: a 1ª foto de produto; sem fotos, listras na cor da categoria com as iniciais */
   const banner = (s, cls = "ban") => s.img
     ? `<div class="${cls}"><img src="${esc(s.img)}" alt="${esc(s.name)}" loading="lazy"></div>`

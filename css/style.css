@@ -98,6 +98,8 @@ main{padding-block:22px 110px}
 .row-card:hover{border-color:var(--brand)}
 .thumb{width:76px;height:76px;border-radius:18px;flex:none;overflow:hidden;display:grid;place-items:center}
 .thumb img{width:100%;height:100%;object-fit:cover}
+.thumb.has-logo{background:#fff;border:1px solid var(--line)}
+.thumb.has-logo img{object-fit:contain;display:block}
 .thumb span{font-family:var(--head);font-weight:700;color:#fff;font-size:1.5rem}
 .row-card .t{min-width:0;display:flex;flex-direction:column;gap:2px}
 .row-card b{font-family:var(--head);font-weight:500;font-size:1.35rem;line-height:1.2}
