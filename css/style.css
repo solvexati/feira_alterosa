@@ -408,3 +408,7 @@ body.no-tabs .fab{bottom:calc(18px + env(safe-area-inset-bottom,0px))}
   .prods h2{font-size:1.8rem}
   .prod-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
 }
+
+/* fotos da capa no painel: retângulos (formato da capa), não quadrados */
+.capa-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.ph.capa{aspect-ratio:21/9}

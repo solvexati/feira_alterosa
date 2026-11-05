@@ -122,12 +122,14 @@
           <label class="f">Cidade<input id="cCity"></label>
           <label class="f">WhatsApp da organização<input id="cWa" inputmode="tel"></label>
           <label class="f">Frase da capa<input id="cTag" maxlength="90"></label>
-          <label class="f full">Fotos da capa <small>até 5 imagens; elas giram no topo do site</small><input id="cImgs" type="file" accept="image/*" multiple></label>
-          <div class="prev full" id="cPrev"></div>
           <p class="ok full" id="cfgOk" hidden>Dados da feira salvos.</p>
           <p class="err full" id="cfgErr" hidden></p>
           <div class="actions full"><button class="btn" type="submit" id="cfgBtn">Salvar dados da feira</button></div>
         </form>
+        <div class="sec-head" style="margin-top:6px"><h3 style="font-size:1.1rem">Fotos da capa <small class="note">carrossel do topo do site · troca a cada 6s · horizontais, cerca de 1920 × 800 px</small></h3><span class="note" id="capaCount"></span></div>
+        <div class="ph-grid capa-grid" id="capaGrid"></div>
+        <p class="ok" id="capaOk" hidden></p>
+        <p class="err" id="capaErr" hidden></p>
       </div>
 
       <div class="panel">

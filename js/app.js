@@ -77,7 +77,9 @@
   /* ---------- carrossel da capa (troca a cada 6s, setas, bolinhas e arrastar) ---------- */
   let slide = 0, timer;
   function renderHero() {
-    const imgs = cfg.imgs && cfg.imgs.length ? cfg.imgs : [FOTO_FEIRA, FOTO_FEIRA];
+    /* com 1 foto só, repete a foto para os dois textos da capa continuarem girando (como no modelo) */
+    const own = cfg.imgs || [];
+    const imgs = own.length > 1 ? own : own.length === 1 ? [own[0], own[0]] : [FOTO_FEIRA, FOTO_FEIRA];
     if (slide >= imgs.length) slide = 0;
     const texts = [
       { pill: esc(cfg.city || "Feira livre"), h: esc(cfg.name), p: esc(cfg.tag), cta: "Ver barracas" },
@@ -285,31 +287,56 @@
   $("#fCat").innerHTML = Object.keys(CATS).map(c => `<option>${c}</option>`).join("");
 
   /* dados da feira */
-  let pendingImgs = null; /* null = não mexeu; [] = foto padrão; [{blob,url}] = novas */
-  function fillCfg() { $("#cName").value = cfg.name; $("#cCity").value = cfg.city || ""; $("#cWa").value = fmtPhone(cfg.wa); $("#cTag").value = cfg.tag || ""; pendingImgs = null; $("#cImgs").value = ""; showCfgPrev(cfg.imgs); }
-  function showCfgPrev(list) { $("#cPrev").innerHTML = (list && list.length ? list.map(s => `<img src="${esc(s)}" alt="">`).join("") + `<button type="button" class="btn ghost sm" id="rmCover">Usar foto padrão</button>` : `<span class="note">Sem fotos novas: o site usa a foto padrão da feira.</span>`); }
-  $("#cImgs").addEventListener("change", async e => {
-    const files = [...e.target.files].slice(0, LIMITS.capa);
-    try {
-      pendingImgs = await Promise.all(files.map(async f => { const blob = await compress(f, "capa"); return { blob, url: URL.createObjectURL(blob) }; }));
-      showCfgPrev(pendingImgs.map(p => p.url));
-    } catch (err) { $("#cfgErr").textContent = err.message; $("#cfgErr").hidden = false; }
-  });
-  $("#cPrev").addEventListener("click", e => { if (e.target.id === "rmCover") { pendingImgs = []; $("#cImgs").value = ""; showCfgPrev([]); } });
+  function fillCfg() { $("#cName").value = cfg.name; $("#cCity").value = cfg.city || ""; $("#cWa").value = fmtPhone(cfg.wa); $("#cTag").value = cfg.tag || ""; renderCapa(); }
   $("#cfgForm").addEventListener("submit", e => {
     e.preventDefault();
     $("#cfgErr").hidden = true;
     busy($("#cfgBtn"), "Salvando…", async () => {
       try {
-        await B.saveCfg({ name: $("#cName").value.trim() || cfg.name, city: $("#cCity").value.trim(), wa: digits($("#cWa").value), tag: $("#cTag").value.trim() },
-          pendingImgs ? pendingImgs.map(p => p.blob) : null);
-        pendingImgs = null; slide = 0;
+        await B.saveCfg({ name: $("#cName").value.trim() || cfg.name, city: $("#cCity").value.trim(), wa: digits($("#cWa").value), tag: $("#cTag").value.trim() }, null);
         await refresh();
         $("#brand").textContent = cfg.name;
         fillCfg();
         $("#cfgOk").hidden = false; setTimeout(() => $("#cfgOk").hidden = true, 2500);
       } catch (err) { $("#cfgErr").textContent = err.message; $("#cfgErr").hidden = false; }
     });
+  });
+
+  /* fotos da capa (carrossel do topo): até 5, cada mudança já vale no site */
+  function capaMsg(ok, txt) { const a = $(ok ? "#capaOk" : "#capaErr"), b = $(ok ? "#capaErr" : "#capaOk"); b.hidden = true; a.textContent = txt; a.hidden = false; clearTimeout(a._t); a._t = setTimeout(() => a.hidden = true, 5000); }
+  function renderCapa() {
+    const list = cfg.imgs || [], max = window.FEIRA_LIMITS.capa;
+    $("#capaCount").textContent = `${list.length} de ${max}`;
+    $("#capaGrid").innerHTML = Array.from({ length: max }, (_, i) => {
+      if (list[i]) return `<div class="ph capa"><img src="${esc(list[i])}" alt="Capa ${i + 1}" loading="lazy"><span class="ph-n">${i + 1}</span>
+        <div class="ph-act"><button type="button" data-cmv="${i}" data-d="-1" ${i ? "" : "disabled"} aria-label="Mover para antes">‹</button><button type="button" data-crm="${i}">Remover</button><button type="button" data-cmv="${i}" data-d="1" ${i < list.length - 1 ? "" : "disabled"} aria-label="Mover para depois">›</button></div></div>`;
+      if (i === list.length) return `<label class="ph add capa"><input type="file" accept="image/*" multiple class="sr" id="capaFiles"><span>+</span><small>Adicionar</small></label>`;
+      return `<div class="ph empty capa"><span>${i + 1}</span></div>`;
+    }).join("");
+  }
+  let capaBusy = false;
+  async function capaOp(fn) {
+    if (capaBusy) return; capaBusy = true;
+    $("#capaGrid").style.opacity = ".6";
+    try { await fn(); } catch (err) { capaMsg(false, err.message); }
+    finally { capaBusy = false; $("#capaGrid").style.opacity = ""; try { await refresh(); } catch (_) {} slide = 0; renderCapa(); }
+  }
+  $("#capaGrid").addEventListener("change", e => {
+    if (e.target.id !== "capaFiles") return;
+    const max = window.FEIRA_LIMITS.capa, room = max - (cfg.imgs || []).length, all = [...e.target.files], files = all.slice(0, room);
+    if (all.length > room) capaMsg(false, `Só cabem mais ${room} foto(s) na capa. As demais foram ignoradas.`);
+    if (!files.length) return;
+    capaOp(async () => {
+      const blobs = await Promise.all(files.map(f => compress(f, "capa")));
+      const saved = await B.addCovers(blobs);
+      if (saved) capaMsg(true, `${files.length} foto(s) adicionada(s) à capa. Já aparecem no site.`);
+      else capaMsg(false, "As fotos aparecem agora, mas o navegador ficou sem espaço para guardá-las (modo demonstração).");
+    });
+  });
+  $("#capaGrid").addEventListener("click", e => {
+    const b = e.target.closest(".ph-act button"); if (!b) return;
+    if (b.dataset.crm != null) capaOp(async () => { await B.removeCover(+b.dataset.crm); capaMsg(true, "Foto removida da capa."); });
+    else if (b.dataset.cmv != null) { const i = +b.dataset.cmv, j = i + +b.dataset.d; capaOp(() => B.moveCover(i, j)); }
   });
 
   /* barracas */

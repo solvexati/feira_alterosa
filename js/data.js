@@ -149,6 +149,14 @@
         if (covers) cfg.imgs = await Promise.all(covers.map(blobToDataURL));
         if (!store(K_CFG, cfg)) throw new Error("O navegador ficou sem espaço para guardar as fotos da capa.");
       },
+      async addCovers(blobs) {
+        cfg.imgs = cfg.imgs || [];
+        const urls = await Promise.all(blobs.map(blobToDataURL));
+        cfg.imgs.push(...urls.slice(0, LIMITS.capa - cfg.imgs.length));
+        return store(K_CFG, cfg);
+      },
+      async removeCover(i) { cfg.imgs.splice(i, 1); store(K_CFG, cfg); },
+      async moveCover(i, j) { const l = cfg.imgs; [l[i], l[j]] = [l[j], l[i]]; store(K_CFG, cfg); },
       async saveStall(editId, d, logo, banner) {
         const data = { num: d.num, name: d.name, owner: d.owner, cat: d.cat, wa: d.wa, ig: d.ig, desc: d.desc };
         if (logo !== undefined) data.logo = logo ? await blobToDataURL(logo) : null;
@@ -277,6 +285,26 @@
         });
         if (error) { if (covers) await removeFiles(paths); fail(friendly(error)); }
         if (covers) await removeFiles(old);
+      },
+      async addCovers(blobs) {
+        const paths = [...cache.coverPaths], novos = [];
+        try {
+          for (const b of blobs.slice(0, LIMITS.capa - paths.length)) novos.push(await upload(`capa/${uid()}.${extOf(b)}`, b));
+          const { error } = await sb.from("feira_config").update({ fotos_capa: [...paths, ...novos] }).eq("id", 1);
+          if (error) fail(friendly(error));
+        } catch (e) { await removeFiles(novos); throw e; }
+        return true;
+      },
+      async removeCover(i) {
+        const paths = [...cache.coverPaths]; const [p] = paths.splice(i, 1);
+        const { error } = await sb.from("feira_config").update({ fotos_capa: paths }).eq("id", 1);
+        if (error) fail(friendly(error));
+        await removeFiles([p]);
+      },
+      async moveCover(i, j) {
+        const paths = [...cache.coverPaths]; [paths[i], paths[j]] = [paths[j], paths[i]];
+        const { error } = await sb.from("feira_config").update({ fotos_capa: paths }).eq("id", 1);
+        if (error) fail(friendly(error));
       },
       async saveStall(editId, d, logo, banner) {
         const row = {
