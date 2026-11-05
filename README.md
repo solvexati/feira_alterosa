@@ -3,7 +3,7 @@
 Site da Feira Alterosa feito em **HTML, CSS e JavaScript puro**, seguindo o protótipo aprovado (`feira-modelo.html`) em layout, cores, fontes, textos e comportamento.
 Os dados ficam no **Supabase** (Postgres, Auth e Storage) e o site é publicado na **Vercel** a cada `git push` no `main`.
 
-- Site: https://feira-alterosa.vercel.app
+- Site: https://feiraalterosamp.vercel.app (o endereço antigo https://feira-alterosa.vercel.app continua funcionando)
 - Supabase: projeto `feira_alterosa` (`debphfbpqinwstugjfgz`)
 
 ```
