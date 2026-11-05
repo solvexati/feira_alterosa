@@ -7,7 +7,33 @@
   "use strict";
   const C = window.FEIRA_CONFIG || {};
 
-  const CATS = {"Hortifruti":"#3c7d3a","Comidas":"#a8523a","Laticínios":"#b0861a","Flores":"#a24a6c","Peixes":"#2f6a8f","Temperos":"#87552a","Artesanato":"#6a5a96","Bebidas":"#2a7d73","Doces":"#b35f78","Padaria":"#946032"};
+  /* categorias (ordem alfabética) e a cor do fundo das iniciais quando a loja não tem logo */
+  const CATS = {
+    "Acessórios e Bijuterias": "#5b6fa6",
+    "Artesanato": "#6a5a96",
+    "Bebidas": "#2a7d73",
+    "Beleza e Cosméticos": "#9c4f6e",
+    "Brinquedos": "#c0702c",
+    "Calçados": "#6b4e3d",
+    "Casa e Decoração": "#7d6b4f",
+    "Comidas": "#a8523a",
+    "Doces": "#b35f78",
+    "Eletrônicos": "#2f4858",
+    "Flores": "#a24a6c",
+    "Hortifruti": "#3c7d3a",
+    "Laticínios": "#b0861a",
+    "Moda Feminina": "#8e3f6b",
+    "Moda Infantil": "#c2703d",
+    "Moda Masculina": "#3d5a80",
+    "Padaria": "#946032",
+    "Peixes": "#2f6a8f",
+    "Pet": "#4f7d5c",
+    "Plantas e Jardim": "#4a7a2f",
+    "Serviços": "#56606b",
+    "Temperos": "#87552a",
+    "Utilidades": "#64707a",
+    "Variedades": "#5f6b73"
+  };
   const LIMITS = { fotos: 10, capa: 5 };
   const SEED = [
     {id:1,num:12,name:"Hortifruti da Maria",owner:"Maria Aparecida",cat:"Hortifruti",wa:"31987654321",ig:"hortifrutidamaria",desc:"Verduras colhidas no sábado, frutas da estação e cheiro-verde."},
