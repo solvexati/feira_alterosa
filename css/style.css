@@ -412,3 +412,46 @@ body.no-tabs .fab{bottom:calc(18px + env(safe-area-inset-bottom,0px))}
 /* fotos da capa no painel: retângulos (formato da capa), não quadrados */
 .capa-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
 .ph.capa{aspect-ratio:21/9}
+
+/* ===== "Quero ser feirante" ===== */
+.topnav .cta-nav{border:1.5px solid var(--brand);color:var(--brand)}
+.topnav .cta-nav.on{border-color:var(--brand)}
+.join{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;width:100%;text-align:left;cursor:pointer;
+  background:var(--brand-soft);border:1.5px dashed var(--brand);border-radius:20px;padding:16px 18px;color:var(--fg)}
+.join-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.join-t b{font-family:var(--head);font-size:1.2rem;color:var(--brand)}
+.join-t small{color:var(--muted);font-size:.9rem}
+.join-go{display:inline-flex;align-items:center;gap:8px;background:var(--brand);color:var(--brand-ink);border-radius:999px;padding:9px 16px;font-weight:700;font-size:.9rem}
+.join-go svg{width:18px;height:18px}
+.cad{max-width:720px;width:100%;margin-inline:auto;display:flex;flex-direction:column;gap:18px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:.88rem;color:var(--muted);cursor:pointer}
+.check input{width:20px;height:20px;margin-top:1px;accent-color:var(--brand);flex:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.cad-ok{align-items:flex-start}
+.cad-ok h2{font-size:1.6rem;color:var(--brand)}
+.cad-ok p{margin:0;color:var(--muted)}
+.cad-ok-ic{width:52px;height:52px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center}
+.cad-ok-ic svg{width:28px;height:28px}
+
+/* solicitações no painel */
+.req .t b{font-family:var(--head);font-weight:600}
+.req .st{padding:6px 8px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);font-size:.85rem}
+.pill-st{display:inline-block;font-size:.72rem;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--chip);color:var(--muted);margin-left:6px;vertical-align:middle}
+.pill-st.nova{background:#f4ecd4;color:#8a6a12}
+.pill-st.aprovada{background:var(--brand-soft);color:var(--brand)}
+
+/* ===== Rodapé: marca d'água Solvexa e engrenagem do ADM ===== */
+main{padding-bottom:28px}
+.foot{border-top:1px solid var(--line);padding-top:20px;padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+.foot-in{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.foot-brand{display:flex;flex-direction:column;line-height:1.2}
+.foot-brand b{font-family:var(--serif);letter-spacing:.12em;text-transform:uppercase;color:var(--brand);font-size:.95rem}
+.foot-brand small{color:var(--muted);font-size:.78rem}
+.marca{font-family:var(--head);font-weight:700;letter-spacing:.32em;text-transform:uppercase;font-size:.85rem;color:var(--fg);opacity:.16;user-select:none;pointer-events:none}
+.gear{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;flex:none}
+.gear:hover{border-color:var(--brand);color:var(--brand)}
+.gear svg{width:22px;height:22px}
+body.no-tabs .foot{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){ .foot{padding-bottom:110px} }
+@media (min-width:900px){ .foot{padding-bottom:120px} }
+@media (min-width:1024px){ main{padding-bottom:40px} .foot{padding-bottom:120px} }

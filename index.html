@@ -29,9 +29,9 @@
       <button data-nav="inicio" data-tab="inicio">Início</button>
       <button data-nav="barracas" data-tab="barracas">Barracas</button>
       <button data-nav="mapa" data-tab="mapa">Mapa</button>
+      <button data-nav="cadastro" data-tab="cadastro" class="cta-nav">Quero ser feirante</button>
     </nav>
     <div style="display:flex;align-items:center;gap:4px">
-    <button class="adm" data-nav="admin" aria-label="Área do administrador">ADM</button>
     <button class="burger" id="openMenu" aria-label="Abrir menu" aria-controls="drawer" aria-expanded="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     </button>
@@ -47,6 +47,7 @@
     <button data-nav="inicio">Início</button>
     <button data-nav="barracas">Todas as barracas</button>
     <button data-nav="mapa">Mapa da feira</button>
+    <button data-nav="cadastro">Quero ser feirante</button>
   </div>
   <span class="dr-label">Barracas</span>
   <ul class="dr-list" id="drList"></ul>
@@ -76,6 +77,11 @@
 
     <div class="sec-head"><h2>Na feira hoje</h2><button class="see" data-nav="barracas">Ver todas<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></i></button></div>
     <div class="strip" id="strip"></div>
+
+    <button class="join" data-nav="cadastro">
+      <span class="join-t"><b>Quer vender na feira?</b><small>Mande seu pedido para ter uma barraca na Feira Alterosa.</small></span>
+      <span class="join-go">Quero ser feirante<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
   </section>
 
   <!-- LISTA -->
@@ -98,6 +104,33 @@
 
   <!-- DETALHE -->
   <section class="view" id="v-barraca" hidden></section>
+
+  <!-- QUERO SER FEIRANTE -->
+  <section class="view" id="v-cadastro" hidden>
+    <div class="cad">
+      <div class="title-block"><span class="eyebrow">Feira Alterosa</span><h1>Quero ser feirante</h1><p>Quer ter sua barraca na feira? Mande seus dados e a organização entra em contato pelo WhatsApp.</p></div>
+      <div class="panel" id="cadBox">
+        <form id="cadForm" class="form" novalidate>
+          <label class="f full">Nome completo<input id="rNome" autocomplete="name" required maxlength="120" placeholder="Maria Aparecida da Silva"></label>
+          <label class="f">WhatsApp <small>com DDD</small><input id="rTel" inputmode="tel" autocomplete="tel" required placeholder="(31) 98765-4321"></label>
+          <label class="f">CPF<input id="rCpf" inputmode="numeric" required placeholder="000.000.000-00" maxlength="14"></label>
+          <label class="f">Nome da barraca <small>ou do seu negócio</small><input id="rBarraca" required maxlength="80" placeholder="Hortifruti da Maria"></label>
+          <label class="f">Categoria<select id="rCat" required></select></label>
+          <label class="f full">O que você vai vender <small>opcional</small><textarea id="rDesc" rows="3" maxlength="300" placeholder="Ex.: verduras, frutas da estação e cheiro-verde"></textarea></label>
+          <label class="hp" aria-hidden="true">Não preencha<input id="rSite" tabindex="-1" autocomplete="off"></label>
+          <label class="check full"><input type="checkbox" id="rOk" required><span>Autorizo a Feira Alterosa a usar estes dados só para analisar meu pedido e entrar em contato comigo.</span></label>
+          <p class="err full" id="cadErr" hidden></p>
+          <div class="actions full"><button class="btn" type="submit" id="cadBtn">Enviar pedido</button><button class="btn ghost" type="button" data-nav="inicio">Voltar ao site</button></div>
+        </form>
+      </div>
+      <div class="panel cad-ok" id="cadOk" hidden>
+        <span class="cad-ok-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>
+        <h2>Pedido enviado</h2>
+        <p>Recebemos seus dados. A organização da feira vai falar com você pelo WhatsApp <b id="cadOkTel"></b>.</p>
+        <div class="actions"><button class="btn" type="button" data-nav="inicio">Voltar ao início</button><button class="btn ghost" type="button" id="cadNovo">Enviar outro pedido</button></div>
+      </div>
+    </div>
+  </section>
 
   <!-- PAINEL -->
   <section class="view" id="v-admin" hidden>
@@ -137,9 +170,25 @@
         <p class="ok" id="formOk" hidden></p>
         <div class="admin-list" id="adminList"></div>
       </div>
+
+      <div class="panel">
+        <div class="sec-head" style="flex-wrap:wrap"><div><h3 style="font-size:1.25rem">Solicitações de novos feirantes</h3><span class="note" id="reqCount"></span></div>
+          <div class="actions"><label class="f" style="flex-direction:row;align-items:center;gap:6px">Mostrar<select id="reqFilter" style="width:auto;padding:7px 10px"><option value="">Todas</option><option value="nova">Novas</option><option value="contatada">Contatadas</option><option value="aprovada">Aprovadas</option><option value="recusada">Recusadas</option></select></label><button class="btn sm" id="reqPdf" type="button">Baixar PDF da lista</button></div></div>
+        <p class="ok" id="reqOk" hidden></p>
+        <p class="err" id="reqErr" hidden></p>
+        <div class="admin-list" id="reqList"></div>
+      </div>
     </div>
   </section>
 </div></main>
+
+<footer class="foot wrap">
+  <div class="col foot-in">
+    <span class="foot-brand"><b id="footName">Feira Alterosa</b><small id="footCity">Betim · MG</small></span>
+    <span class="marca" aria-label="Desenvolvido por Solvexa">Solvexa</span>
+    <button class="gear" type="button" data-nav="admin" aria-label="Área do administrador" title="Administração"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+  </div>
+</footer>
 
 
 <div class="modal" id="stallModal" hidden>

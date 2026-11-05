@@ -48,11 +48,12 @@ Medido com uma foto real: 1280px em WebP pesa praticamente o mesmo que 1000px em
 | `#barracas` | Lista com busca, Categorias e Mapa da feira |
 | `#mapa`, `/mapa` ou `?mapa=1` | Lista com o mapa aberto |
 | `#barraca-12` | Página da barraca 12-777 |
-| `#admin` (botão ADM) | Painel: dados da feira e barracas (modal para cadastrar, editar e colocar imagens) |
+| `#cadastro` | Formulário "Quero ser feirante" (nome, WhatsApp, CPF, barraca, categoria) |
+| `#admin` (engrenagem no rodapé) | Painel: dados da feira e barracas (modal para cadastrar, editar e colocar imagens) |
 
 ## Configurar o Supabase (uma vez)
 
-1. No **SQL Editor** do projeto, rode `supabase/migrations/001_schema.sql` e depois `supabase/seed.sql`.
+1. No **SQL Editor** do projeto, rode `supabase/migrations/001_schema.sql`, `supabase/migrations/002_solicitacoes.sql` e depois `supabase/seed.sql`.
 2. Crie o administrador: em **Authentication → Users → Add user → Create new user**, informe o e-mail e a senha e marque **Auto Confirm User**. Depois rode `supabase/criar-admin.sql` com esse e-mail.
 3. Entre no site pelo botão **ADM** com esse e-mail e senha.
 
@@ -68,8 +69,22 @@ Para testar sem banco, deixe `SUPABASE_URL` e `SUPABASE_ANON_KEY` vazios no `js/
 
 **Foto da capa:** coloque o `feira-modelo.html` na raiz e rode `npm run foto`. Isso cria `assets/capa-feira.jpg`. Sem ela, a capa usa a ilustração de reserva. O admin também pode trocar a capa pelo painel (até 5 fotos).
 
+## Pedidos de novos feirantes
+
+O formulário **Quero ser feirante** (menu de cima, menu lateral e chamada no fim do início) grava em `solicitacoes`. O CPF é validado pelos dígitos verificadores, há um campo-armadilha contra robôs e o visitante autoriza o uso dos dados.
+
+No painel, em **Solicitações de novos feirantes**, o admin:
+
+- filtra por situação (nova, contatada, aprovada, recusada);
+- chama o pedido no WhatsApp;
+- gera o **PDF da lista** ou a **ficha em PDF** de uma pessoa;
+- apaga um pedido.
+
+O PDF é gerado no navegador (jsPDF, carregado só quando o admin pede).
+
 ## Segurança (RLS)
 
 - **Público:** lê `feira_config`, a view `barracas_publicas` (sem `user_id`), `barraca_fotos` e `barraca_banners` (o banner único de cada loja).
 - **Admin** (linha em `admins`): acesso total às tabelas e ao bucket `feira`.
+- **Solicitações:** o público só **envia** (insert). Ler, mudar e apagar é só do admin, então o CPF nunca fica público.
 - Um gatilho impede mais de 10 fotos por loja. O bucket aceita só `image/*`, até 2 MB por arquivo.

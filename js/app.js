@@ -217,13 +217,14 @@
   function route() {
     const h = location.hash.slice(1) || "inicio";
     const m = h.match(/^barraca-(\d+)$/);
-    const view = m ? "barraca" : h === "mapa" ? "barracas" : ["inicio", "barracas", "admin"].includes(h) ? h : "inicio";
+    const view = m ? "barraca" : h === "mapa" ? "barracas" : ["inicio", "barracas", "admin", "cadastro"].includes(h) ? h : "inicio";
     document.querySelectorAll("main .col > .view").forEach(v => v.hidden = v.id !== "v-" + view);
     $("#brand").textContent = cfg.name;
     if (view !== "barraca") document.title = `${cfg.name} · ${cfg.city || "Feira livre"}`;
     $("#fab").href = waLink(cfg.wa, "Olá! Vim pelo site da " + cfg.name + ".");
     $("#fab").innerHTML = WA_SVG;
-    $("#fab").hidden = view === "admin" || !digits(cfg.wa);
+    $("#fab").hidden = view === "admin" || view === "cadastro" || !digits(cfg.wa);
+    $("#footName").textContent = cfg.name; $("#footCity").textContent = (cfg.city ? cfg.city + " · " : "") + "MG";
     clearInterval(timer);
     if (view === "inicio") renderHome();
     if (view === "barracas") {
@@ -234,7 +235,8 @@
     }
     if (view === "barraca") renderDetail(+m[1]);
     if (view !== "barraca") lbClose();
-    if (view === "admin") { const ok = B.isAdmin(); $("#loginBox").hidden = ok; $("#panelBox").hidden = !ok; if (ok) renderAdmin(); }
+    if (view === "admin") { const ok = B.isAdmin(); $("#loginBox").hidden = ok; $("#panelBox").hidden = !ok; if (ok) { renderAdmin(); loadRequests(); } }
+    if (view === "cadastro") renderCadastro();
     renderDrawer();
     const tab = h === "mapa" ? "mapa" : view === "barraca" ? "barracas" : view;
     document.querySelectorAll("#tabbar [data-tab], .topnav [data-tab]").forEach(b => { const on = b.dataset.tab === tab; b.classList.toggle("on", on); on ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"); });
@@ -473,6 +475,158 @@
     if (b.dataset.rm != null) imgOp(async () => { await B.removeImage(s.id, kind, +b.dataset.rm); imgMsg(true, "Imagem removida."); });
     else if (b.dataset.mv != null) { const i = +b.dataset.mv, j = i + +b.dataset.d; imgOp(() => B.moveImage(s.id, kind, i, j)); }
   });
+
+  /* ======================= QUERO SER FEIRANTE ======================= */
+  const fmtCpf = v => { const d = digits(v).slice(0, 11); return d.length > 9 ? `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}` : d.length > 6 ? `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}` : d.length > 3 ? `${d.slice(0,3)}.${d.slice(3)}` : d; };
+  const fmtTelLive = v => { const d = digits(v).slice(0, 11); if (d.length <= 2) return d; if (d.length <= 6) return `(${d.slice(0,2)}) ${d.slice(2)}`; if (d.length <= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; };
+  /* CPF válido: 11 dígitos, não todos iguais, e os dois dígitos verificadores corretos */
+  function cpfValido(v) {
+    const c = digits(v);
+    if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+    const dv = n => { let s = 0; for (let i = 0; i < n; i++) s += +c[i] * (n + 1 - i); const r = (s * 10) % 11; return r === 10 ? 0 : r; };
+    return dv(9) === +c[9] && dv(10) === +c[10];
+  }
+  function renderCadastro() {
+    const sel = $("#rCat");
+    if (!sel.options.length) sel.innerHTML = `<option value="" disabled selected>Escolha uma categoria</option>` + Object.keys(CATS).map(c => `<option>${c}</option>`).join("") + `<option>Outra</option>`;
+  }
+  $("#rTel").addEventListener("input", e => { e.target.value = fmtTelLive(e.target.value); });
+  $("#rCpf").addEventListener("input", e => { e.target.value = fmtCpf(e.target.value); });
+  $("#cadNovo").onclick = () => { $("#cadForm").reset(); $("#cadOk").hidden = true; $("#cadBox").hidden = false; $("#rNome").focus(); };
+  $("#cadForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const err = $("#cadErr"), show = (msg, el) => { err.textContent = msg; err.hidden = false; if (el) el.focus(); };
+    err.hidden = true;
+    if ($("#rSite").value) return; /* robô preencheu o campo escondido */
+    const nome = $("#rNome").value.trim().replace(/\s+/g, " "), tel = digits($("#rTel").value), cpf = digits($("#rCpf").value);
+    const barraca = $("#rBarraca").value.trim(), categoria = $("#rCat").value, descricao = $("#rDesc").value.trim();
+    if (nome.split(" ").length < 2 || nome.length < 5) return show("Escreva seu nome completo (nome e sobrenome).", $("#rNome"));
+    if (tel.length < 10 || tel.length > 11) return show("O WhatsApp precisa ter DDD e número, por exemplo (31) 98765-4321.", $("#rTel"));
+    if (!cpfValido(cpf)) return show("Esse CPF não é válido. Confira os números.", $("#rCpf"));
+    if (barraca.length < 2) return show("Escreva o nome da barraca ou do seu negócio.", $("#rBarraca"));
+    if (!categoria) return show("Escolha a categoria da barraca.", $("#rCat"));
+    if (!$("#rOk").checked) return show("Marque a autorização para podermos entrar em contato.", $("#rOk"));
+    busy($("#cadBtn"), "Enviando…", async () => {
+      try {
+        await B.sendRequest({ nome, telefone: tel, cpf, barraca, categoria, descricao });
+        $("#cadOkTel").textContent = fmtPhone(tel);
+        $("#cadBox").hidden = true; $("#cadOk").hidden = false; window.scrollTo(0, 0);
+      } catch (ex) { show(ex.message); }
+    });
+  });
+
+  /* ============ PAINEL: solicitações de novos feirantes ============ */
+  const ST = { nova: "Nova", contatada: "Contatada", aprovada: "Aprovada", recusada: "Recusada" };
+  let reqs = [], reqConfirm = null;
+  const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); };
+  const reqMsg = (ok, txt) => { const a = $(ok ? "#reqOk" : "#reqErr"), b = $(ok ? "#reqErr" : "#reqOk"); b.hidden = true; a.textContent = txt; a.hidden = !txt; clearTimeout(a._t); if (ok) a._t = setTimeout(() => a.hidden = true, 3500); };
+  const visibleReqs = () => { const f = $("#reqFilter").value; return f ? reqs.filter(r => r.status === f) : reqs; };
+  async function loadRequests() {
+    $("#reqList").innerHTML = `<p class="note">Carregando…</p>`;
+    try { reqs = await B.listRequests(); $("#reqErr").hidden = true; }
+    catch (ex) { reqs = []; reqMsg(false, ex.message); }
+    renderRequests();
+  }
+  function renderRequests() {
+    const novas = reqs.filter(r => r.status === "nova").length;
+    $("#reqCount").textContent = reqs.length ? `${reqs.length} pedido(s) · ${novas} nova(s)` : "Nenhum pedido ainda";
+    const list = visibleReqs();
+    $("#reqList").innerHTML = list.length ? list.map(r => `<div class="a-row req">
+      <span class="t"><b>${esc(r.nome)}<span class="pill-st ${esc(r.status)}">${ST[r.status] || esc(r.status)}</span></b>
+        <small>${esc(r.barraca)} · ${esc(r.categoria)}${r.descricao ? " · " + esc(r.descricao) : ""}</small>
+        <small>WhatsApp <a href="${waLink(r.telefone, "Olá, " + r.nome.split(" ")[0] + "! Aqui é da organização da " + cfg.name + ". Recebemos seu pedido para ter uma barraca na feira.")}" target="_blank" rel="noopener">${esc(fmtPhone(r.telefone))}</a> · CPF ${esc(fmtCpf(r.cpf))} · ${esc(fmtDate(r.created_at))}</small></span>
+      ${same(reqConfirm, r.id) ? `<span class="confirm">Apagar pedido? <button class="btn danger sm" data-rdel="${esc(r.id)}">Apagar</button><button class="btn ghost sm" data-rno="1">Cancelar</button></span>`
+        : `<span class="actions"><select class="st" data-rst="${esc(r.id)}" aria-label="Situação do pedido">${Object.entries(ST).map(([k, v]) => `<option value="${k}" ${k === r.status ? "selected" : ""}>${v}</option>`).join("")}</select><button class="btn ghost sm" data-rpdf="${esc(r.id)}">Ficha PDF</button><button class="btn ghost sm" data-rask="${esc(r.id)}">Apagar</button></span>`}
+    </div>`).join("") : `<p class="empty">${reqs.length ? "Nenhum pedido com essa situação." : "Quando alguém enviar o formulário “Quero ser feirante”, o pedido aparece aqui."}</p>`;
+  }
+  $("#reqFilter").addEventListener("change", renderRequests);
+  $("#reqList").addEventListener("change", async e => {
+    const id = e.target.dataset.rst; if (!id) return;
+    try { await B.setRequestStatus(id, e.target.value); const r = reqs.find(x => same(x.id, id)); if (r) r.status = e.target.value; renderRequests(); reqMsg(true, "Situação atualizada."); }
+    catch (ex) { reqMsg(false, ex.message); renderRequests(); }
+  });
+  $("#reqList").addEventListener("click", async e => {
+    const d = e.target.dataset;
+    if (d.rask) { reqConfirm = d.rask; renderRequests(); }
+    else if (d.rno) { reqConfirm = null; renderRequests(); }
+    else if (d.rdel) {
+      try { await B.deleteRequest(d.rdel); reqs = reqs.filter(x => !same(x.id, d.rdel)); reqConfirm = null; renderRequests(); reqMsg(true, "Pedido apagado."); }
+      catch (ex) { reqMsg(false, ex.message); }
+    }
+    else if (d.rpdf) { const r = reqs.find(x => same(x.id, d.rpdf)); if (r) pdfFicha(r).catch(ex => reqMsg(false, ex.message)); }
+  });
+  $("#reqPdf").onclick = () => {
+    const list = visibleReqs();
+    if (!list.length) { reqMsg(false, "Não há pedidos para colocar no PDF."); return; }
+    pdfLista(list).catch(ex => reqMsg(false, ex.message));
+  };
+
+  /* PDF: a biblioteca só carrega quando o admin pede o arquivo */
+  const loadScript = src => new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error("Não foi possível carregar o gerador de PDF. Confira a internet e tente de novo.")); document.head.appendChild(sc); });
+  let pdfLib = null;
+  async function getPdf() {
+    if (!pdfLib) pdfLib = (async () => {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+      return window.jspdf.jsPDF;
+    })().catch(e => { pdfLib = null; throw e; });
+    return pdfLib;
+  }
+  const hoje = () => new Date().toLocaleDateString("pt-BR");
+  const hojeArq = () => new Date().toISOString().slice(0, 10);
+  const BRAND_RGB = [46, 107, 69];
+  function pdfHeader(doc, title, sub) {
+    const w = doc.internal.pageSize.getWidth();
+    doc.setFillColor(...BRAND_RGB); doc.rect(0, 0, w, 22, "F");
+    doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.text(cfg.name.toUpperCase(), 14, 14);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text(`Gerado em ${hoje()}`, w - 14, 14, { align: "right" });
+    doc.setTextColor(34, 41, 31); doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text(title, 14, 34);
+    if (sub) { doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(105, 112, 95); doc.text(sub, 14, 41); }
+  }
+  function pdfFooter(doc) {
+    const n = doc.getNumberOfPages(), w = doc.internal.pageSize.getWidth(), h = doc.internal.pageSize.getHeight();
+    for (let i = 1; i <= n; i++) {
+      doc.setPage(i); doc.setFontSize(8); doc.setTextColor(140);
+      doc.text("Documento interno · contém dados pessoais (LGPD). Não compartilhe fora da organização.", 14, h - 8);
+      doc.text(`Página ${i} de ${n}`, w - 14, h - 8, { align: "right" });
+    }
+  }
+  async function pdfLista(list) {
+    const JsPDF = await getPdf();
+    const doc = new JsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const f = $("#reqFilter").value;
+    pdfHeader(doc, "Solicitações de novos feirantes", `${list.length} pedido(s)${f ? " · situação: " + ST[f] : ""}`);
+    doc.autoTable({
+      startY: 47,
+      head: [["Data", "Nome completo", "WhatsApp", "CPF", "Barraca", "Categoria", "O que vai vender", "Situação"]],
+      body: list.map(r => [fmtDate(r.created_at), r.nome, fmtPhone(r.telefone), fmtCpf(r.cpf), r.barraca, r.categoria, r.descricao || "", ST[r.status] || r.status]),
+      styles: { font: "helvetica", fontSize: 8.5, cellPadding: 2.2, valign: "middle", textColor: [34, 41, 31] },
+      headStyles: { fillColor: BRAND_RGB, textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [245, 245, 240] },
+      columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 30 }, 3: { cellWidth: 28 }, 7: { cellWidth: 22 } },
+      margin: { left: 14, right: 14, bottom: 16 }
+    });
+    pdfFooter(doc);
+    doc.save(`solicitacoes-feirantes-${hojeArq()}.pdf`);
+    reqMsg(true, "PDF gerado.");
+  }
+  async function pdfFicha(r) {
+    const JsPDF = await getPdf();
+    const doc = new JsPDF({ unit: "mm", format: "a4" });
+    pdfHeader(doc, "Ficha de solicitação de feirante", `Pedido recebido em ${fmtDate(r.created_at)}`);
+    doc.autoTable({
+      startY: 48, theme: "grid",
+      body: [["Nome completo", r.nome], ["WhatsApp", fmtPhone(r.telefone)], ["CPF", fmtCpf(r.cpf)], ["Nome da barraca", r.barraca], ["Categoria", r.categoria], ["O que vai vender", r.descricao || "—"], ["Situação", ST[r.status] || r.status]],
+      styles: { font: "helvetica", fontSize: 11, cellPadding: 4, textColor: [34, 41, 31] },
+      columnStyles: { 0: { fontStyle: "bold", cellWidth: 52, fillColor: [226, 238, 229] } },
+      margin: { left: 14, right: 14 }
+    });
+    const y = doc.lastAutoTable.finalY + 22;
+    doc.setDrawColor(150); doc.line(14, y, 100, y); doc.line(112, y, 196, y);
+    doc.setFontSize(9); doc.setTextColor(105, 112, 95); doc.text("Assinatura do(a) solicitante", 14, y + 5); doc.text("Organização da feira", 112, y + 5);
+    pdfFooter(doc);
+    doc.save(`ficha-${r.nome.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${hojeArq()}.pdf`);
+  }
 
   /* ---------- início ---------- */
   function setupMode() {

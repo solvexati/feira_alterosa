@@ -110,7 +110,7 @@
      MODO DEMONSTRAÇÃO (localStorage)
      ===================================================================== */
   function DemoBackend() {
-    const K_ST = "feira-barracas-v7", K_CFG = "feira-config-v3";
+    const K_ST = "feira-barracas-v7", K_CFG = "feira-config-v3", K_REQ = "feira-solicitacoes-v1";
     const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch (e) { return d; } };
     const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
     const ss = {
@@ -149,6 +149,15 @@
         if (covers) cfg.imgs = await Promise.all(covers.map(blobToDataURL));
         if (!store(K_CFG, cfg)) throw new Error("O navegador ficou sem espaço para guardar as fotos da capa.");
       },
+      /* pedidos de "Quero ser feirante" (modo demonstração: ficam neste navegador) */
+      async sendRequest(r) {
+        const list = load(K_REQ, []);
+        list.unshift({ id: Date.now(), ...r, status: "nova", created_at: new Date().toISOString() });
+        if (!store(K_REQ, list)) throw new Error("Não foi possível enviar seu pedido agora. Tente de novo em instantes.");
+      },
+      async listRequests() { return load(K_REQ, []); },
+      async setRequestStatus(id, status) { const l = load(K_REQ, []); const r = l.find(x => String(x.id) === String(id)); if (r) r.status = status; store(K_REQ, l); },
+      async deleteRequest(id) { store(K_REQ, load(K_REQ, []).filter(x => String(x.id) !== String(id))); },
       async addCovers(blobs) {
         cfg.imgs = cfg.imgs || [];
         const urls = await Promise.all(blobs.map(blobToDataURL));
@@ -285,6 +294,35 @@
         });
         if (error) { if (covers) await removeFiles(paths); fail(friendly(error)); }
         if (covers) await removeFiles(old);
+      },
+      /* pedidos de "Quero ser feirante": o público só envia; só o admin lê (RLS) */
+      async sendRequest(r) {
+        const { error } = await sb.from("solicitacoes").insert({
+          nome: r.nome, telefone: r.telefone, cpf: r.cpf, barraca: r.barraca, categoria: r.categoria, descricao: r.descricao || null
+        });
+        if (error) {
+          console.error(error);
+          if (error.code === "42P01" || error.code === "PGRST205" || /does not exist|schema cache/i.test(error.message))
+            fail("O formulário está sendo ativado. Tente de novo mais tarde ou fale com a organização pelo WhatsApp.");
+          fail("Não foi possível enviar seu pedido agora. Confira os dados e tente de novo.");
+        }
+      },
+      async listRequests() {
+        const { data, error } = await sb.from("solicitacoes").select("*").order("created_at", { ascending: false });
+        if (error) {
+          if (error.code === "42P01" || error.code === "PGRST205" || /does not exist|schema cache/i.test(error.message))
+            fail("A tabela de solicitações ainda não foi criada no Supabase (rode supabase/migrations/002_solicitacoes.sql).");
+          fail(friendly(error));
+        }
+        return data || [];
+      },
+      async setRequestStatus(id, status) {
+        const { error } = await sb.from("solicitacoes").update({ status }).eq("id", id);
+        if (error) fail(friendly(error));
+      },
+      async deleteRequest(id) {
+        const { error } = await sb.from("solicitacoes").delete().eq("id", id);
+        if (error) fail(friendly(error));
       },
       async addCovers(blobs) {
         const paths = [...cache.coverPaths], novos = [];
