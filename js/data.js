@@ -145,7 +145,7 @@
       },
       async adminLogout() { admin = false; ss.del("feira-admin"); },
       async saveCfg(data, covers) {
-        cfg.name = data.name || cfg.name; cfg.city = data.city; cfg.wa = data.wa; cfg.tag = data.tag;
+        cfg.name = data.name || cfg.name; cfg.city = data.city; cfg.wa = data.wa; cfg.tag = data.tag; cfg.title = data.title || "";
         if (covers) cfg.imgs = await Promise.all(covers.map(blobToDataURL));
         if (!store(K_CFG, cfg)) throw new Error("O navegador ficou sem espaço para guardar as fotos da capa.");
       },
@@ -250,7 +250,7 @@
         cache.coverPaths = conf.fotos_capa || [];
         const cfg = {
           name: conf.nome || DEFAULT_CFG.name, city: conf.cidade || "", wa: conf.whatsapp || "",
-          tag: conf.frase_capa || "", imgs: cache.coverPaths.map(pubUrl)
+          title: conf.titulo_capa || "", tag: (conf.subtitulo_capa ?? conf.frase_capa) || "", imgs: cache.coverPaths.map(pubUrl)
         };
         const group = rows => {
           const out = {};
@@ -289,9 +289,13 @@
           paths = [];
           for (let i = 0; i < covers.length; i++) paths.push(await upload(`capa/${uid()}-${i + 1}.${extOf(covers[i])}`, covers[i]));
         }
-        const { error } = await sb.from("feira_config").upsert({
-          id: 1, nome: data.name, cidade: data.city || null, whatsapp: data.wa || null, frase_capa: data.tag || null, fotos_capa: paths
-        });
+        const base = { id: 1, nome: data.name, cidade: data.city || null, whatsapp: data.wa || null, frase_capa: data.tag || null, fotos_capa: paths };
+        let { error } = await sb.from("feira_config").upsert({ ...base, titulo_capa: data.title || null, subtitulo_capa: data.tag || null });
+        /* banco ainda sem as colunas de título/subtítulo (SQL 003 não rodado): salva o resto e avisa */
+        if (error && (error.code === "PGRST204" || /titulo_capa|subtitulo_capa/.test(error.message))) {
+          ({ error } = await sb.from("feira_config").upsert(base));
+          if (!error) fail("Dados salvos, mas o título da capa só pode ser salvo depois de rodar o SQL 003_capa_titulo.sql no Supabase.");
+        }
         if (error) { if (covers) await removeFiles(paths); fail(friendly(error)); }
         if (covers) await removeFiles(old);
       },

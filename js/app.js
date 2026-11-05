@@ -82,11 +82,11 @@
     const imgs = own.length > 1 ? own : own.length === 1 ? [own[0], own[0]] : [FOTO_FEIRA, FOTO_FEIRA];
     if (slide >= imgs.length) slide = 0;
     const texts = [
-      { pill: esc(cfg.city || "Feira livre"), h: esc(cfg.name), p: esc(cfg.tag), cta: "Ver barracas" },
+      { pill: esc(cfg.city || "Feira livre"), h: esc(cfg.title || cfg.name), p: esc(cfg.tag), cta: "Ver barracas", long: (cfg.title || cfg.name).length > 26 },
       { pill: "Direto do produtor", h: "Fresquinho<br>toda semana", p: "Fale com o feirante <b>direto pelo WhatsApp</b>.", cta: "Buscar barraca" }
     ];
     $("#hero").innerHTML = imgs.map((src, i) => { const t = texts[i % texts.length]; return `<div class="slide ${i === slide ? "on" : ""}" aria-hidden="${i !== slide}"><img src="${esc(src)}" alt="Foto da ${esc(cfg.name)}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'} onerror="this.onerror=null;this.src=window.__feiraFallback">
-      <div class="slide-txt"><span class="pill">${t.pill}</span><h1>${t.h}</h1><p>${t.p}</p><button class="cta" data-nav="barracas">${t.cta}</button></div></div>`; }).join("")
+      <div class="slide-txt"><span class="pill">${t.pill}</span><h1${t.long ? ' class="long"' : ""}>${t.h}</h1><p>${t.p}</p><button class="cta" data-nav="barracas">${t.cta}</button></div></div>`; }).join("")
       + (imgs.length > 1 ? `<button class="arrow l" data-sl="-1" aria-label="Foto anterior">${ARROW_L}</button>
       <button class="arrow r" data-sl="1" aria-label="Próxima foto">${ARROW}</button>
       <div class="dots">${imgs.map((_, i) => `<button class="${i === slide ? "on" : ""}" data-dot="${i}" aria-label="Foto ${i + 1}"></button>`).join("")}</div>` : "");
@@ -289,13 +289,15 @@
   $("#fCat").innerHTML = Object.keys(CATS).map(c => `<option>${c}</option>`).join("");
 
   /* dados da feira */
-  function fillCfg() { $("#cName").value = cfg.name; $("#cCity").value = cfg.city || ""; $("#cWa").value = fmtPhone(cfg.wa); $("#cTag").value = cfg.tag || ""; renderCapa(); }
+  function fillCfg() { $("#cName").value = cfg.name; $("#cCity").value = cfg.city || ""; $("#cWa").value = fmtPhone(cfg.wa); $("#cTag").value = cfg.tag || ""; $("#cTitle").value = cfg.title || ""; tagCount(); renderCapa(); }
+  const tagCount = () => { $("#cTagCount").textContent = `· ${$("#cTag").value.length}/220`; };
+  $("#cTag").addEventListener("input", tagCount);
   $("#cfgForm").addEventListener("submit", e => {
     e.preventDefault();
     $("#cfgErr").hidden = true;
     busy($("#cfgBtn"), "Salvando…", async () => {
       try {
-        await B.saveCfg({ name: $("#cName").value.trim() || cfg.name, city: $("#cCity").value.trim(), wa: digits($("#cWa").value), tag: $("#cTag").value.trim() }, null);
+        await B.saveCfg({ name: $("#cName").value.trim() || cfg.name, city: $("#cCity").value.trim(), wa: digits($("#cWa").value), tag: $("#cTag").value.trim().replace(/s+/g, " "), title: $("#cTitle").value.trim() }, null);
         await refresh();
         $("#brand").textContent = cfg.name;
         fillCfg();

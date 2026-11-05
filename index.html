@@ -154,7 +154,8 @@
           <label class="f">Nome da feira<input id="cName" required></label>
           <label class="f">Cidade<input id="cCity"></label>
           <label class="f">WhatsApp da organização<input id="cWa" inputmode="tel"></label>
-          <label class="f">Frase da capa<input id="cTag" maxlength="90"></label>
+          <label class="f full">Título da capa <small>texto grande do primeiro slide · se ficar vazio, usa o nome da feira</small><input id="cTitle" maxlength="70" placeholder="Feira Alterosa"></label>
+          <label class="f full">Subtítulo da capa <small>texto embaixo do título · até 220 caracteres <span id="cTagCount"></span></small><textarea id="cTag" rows="3" maxlength="220" placeholder="Todo domingo, das 7h às 13h, em Betim."></textarea></label>
           <p class="ok full" id="cfgOk" hidden>Dados da feira salvos.</p>
           <p class="err full" id="cfgErr" hidden></p>
           <div class="actions full"><button class="btn" type="submit" id="cfgBtn">Salvar dados da feira</button></div>
@@ -185,7 +186,7 @@
 <footer class="foot wrap">
   <div class="col foot-in">
     <span class="foot-brand"><b id="footName">Feira Alterosa</b><small id="footCity">Betim · MG</small></span>
-    <span class="marca" aria-label="Desenvolvido por Solvexa">Solvexa</span>
+    <span class="marca" aria-label="Desenvolvido por SOLVEXA">SOLVEXA</span>
     <button class="gear" type="button" data-nav="admin" aria-label="Área do administrador" title="Administração"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
   </div>
 </footer>

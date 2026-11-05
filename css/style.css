@@ -455,3 +455,9 @@ body.no-tabs .foot{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 @media (min-width:700px){ .foot{padding-bottom:110px} }
 @media (min-width:900px){ .foot{padding-bottom:120px} }
 @media (min-width:1024px){ main{padding-bottom:40px} .foot{padding-bottom:120px} }
+
+/* capa: subtítulo mais longo e título longo um pouco menor */
+.slide-txt p{max-width:44ch}
+.slide-txt h1.long{font-size:clamp(1.6rem,7vw,2rem)}
+@media (min-width:700px){ .slide-txt h1.long{font-size:2.5rem} .slide-txt p{max-width:52ch} }
+@media (min-width:1024px){ .slide-txt{max-width:640px} .slide-txt h1.long{font-size:3rem} }

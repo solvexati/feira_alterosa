@@ -53,7 +53,7 @@ Medido com uma foto real: 1280px em WebP pesa praticamente o mesmo que 1000px em
 
 ## Configurar o Supabase (uma vez)
 
-1. No **SQL Editor** do projeto, rode `supabase/migrations/001_schema.sql`, `supabase/migrations/002_solicitacoes.sql` e depois `supabase/seed.sql`.
+1. No **SQL Editor** do projeto, rode `supabase/migrations/001_schema.sql`, `002_solicitacoes.sql`, `003_capa_titulo.sql` e depois `supabase/seed.sql`.
 2. Crie o administrador: em **Authentication → Users → Add user → Create new user**, informe o e-mail e a senha e marque **Auto Confirm User**. Depois rode `supabase/criar-admin.sql` com esse e-mail.
 3. Entre no site pelo botão **ADM** com esse e-mail e senha.
 
